@@ -1,105 +1,132 @@
 <?php
 
+use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\Finance\DashboardController as FinanceDashboard;
+use App\Http\Controllers\Management\ActivityLogController as ManagementActivityLogController;
+use App\Http\Controllers\Management\AgendaController as ManagementAgendaController;
 use App\Http\Controllers\Management\CompanyProfileController as ManagementCompanyController;
 use App\Http\Controllers\Management\DashboardController as ManagementDashboard;
+use App\Http\Controllers\Management\DocumentController as ManagementDocumentController;
+use App\Http\Controllers\Management\ExpenseController as ManagementExpenseController;
+use App\Http\Controllers\Management\LocalAIController;
 use App\Http\Controllers\Management\ProjectController as ManagementProjectController;
 use App\Http\Controllers\Management\RoadmapController as ManagementRoadmapController;
 use App\Http\Controllers\Management\TaskController as ManagementTaskController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ChatController;
-use App\Http\Controllers\ChatbotController;
-use App\Http\Controllers\Management\DocumentController as ManagementDocumentController;
-use App\Http\Controllers\Management\LocalAIController;
-use App\Http\Controllers\Management\ExpenseController as ManagementExpenseController;
-use App\Http\Controllers\Management\AgendaController as ManagementAgendaController;
+use App\Http\Controllers\PublicAwardController;
 use App\Http\Controllers\PublicCompanyController;
+use App\Http\Controllers\Superadmin\AISettingsController;
 use App\Http\Controllers\Superadmin\CompanyProfileController as SuperadminCompanyController;
 use App\Http\Controllers\Superadmin\DashboardController as SuperadminDashboard;
 use App\Http\Controllers\Superadmin\UserController;
+use App\Http\Controllers\User\CompanyController as UserCompanyController;
 use App\Http\Controllers\User\DashboardController as UserDashboard;
+use App\Http\Controllers\User\ProjectController as UserProjectController;
+use App\Models\User;
+use Carbon\Carbon;
+use Database\Seeders\DemoDummySeeder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Management\ActivityLogController as ManagementActivityLogController;
 
-
-Route::post('/demo-login', function (\Illuminate\Http\Request $request) {
+Route::post('/demo-login', function (Request $request) {
     $token = $request->input('token');
     $name = trim($request->input('name'));
     $email = trim($request->input('email'));
     $org = trim($request->input('organization'));
-    
+
     if (empty($name)) {
         return redirect()->back()->with('error', 'Nama lengkap wajib diisi untuk mencoba demo.');
     }
-    
+
     if (empty($email)) {
         return redirect()->back()->with('error', 'Alamat email wajib diisi untuk mencoba demo.');
     }
-    
+
     if ($token !== 'demo_management' && $token !== 'demo_employee') {
         return redirect()->back()->with('error', 'Token demo tidak valid.');
     }
-    
+
+    $trackId = null;
     try {
-        \Illuminate\Support\Facades\DB::table('demo_tracks')->insert([
+        $trackId = DB::table('demo_tracks')->insertGetId([
             'name' => $name,
             'email' => $email,
             'organization' => $org,
             'token' => $token,
             'ip_address' => $request->ip(),
-            'created_at' => \Carbon\Carbon::now(),
-            'updated_at' => \Carbon\Carbon::now(),
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
         ]);
-    } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::error('Demo tracking failed: ' . $e->getMessage());
+    } catch (Exception $e) {
+        Log::error('Demo tracking failed: '.$e->getMessage());
     }
-    
+
     $role = ($token === 'demo_management') ? 'management' : 'user';
     session([
         'demo_user_role' => $role,
-        'demo_user_name' => $name . ' (' . ($org ?: 'Personal') . ')',
-        'demo_user_email' => $email
+        'demo_user_name' => $name.' ('.($org ?: 'Personal').')',
+        'demo_user_email' => $email,
+        'demo_track_id' => $trackId,
     ]);
-    
-    $realUser = \App\Models\User::where('role', $role)->first();
-    if ($realUser) {
-        \Illuminate\Support\Facades\Auth::login($realUser);
+
+    if ($trackId) {
+        try {
+            $seeder = new DemoDummySeeder;
+            $seeder->run($trackId);
+        } catch (Exception $e) {
+            Log::error('Demo dummy seeding failed: '.$e->getMessage());
+        }
     }
-    
+
+    $realUser = User::where('role', $role)->first();
+    if ($realUser) {
+        Auth::login($realUser);
+    }
+
     $targetRoute = ($role === 'management') ? 'management.dashboard' : 'user.dashboard';
+
     return redirect()->route($targetRoute);
 })->name('demo-login-submit');
 
-Route::get('/demo-login', function (\Illuminate\Http\Request $request) {
+Route::get('/demo-login', function (Request $request) {
     $token = $request->query('token');
     if ($token === 'demo_management' || $token === 'demo_employee') {
         return redirect()->route('login', ['demo_token' => $token]);
     }
+
     return redirect()->route('login')->with('error', 'Token demo tidak valid.');
 })->name('demo-login');
 
 Route::get('/', function () {
-    if (Illuminate\Support\Facades\Auth::check()) {
-        $role = Illuminate\Support\Facades\Auth::user()->role;
+    if (Auth::check()) {
+        $role = Auth::user()->role;
         $targetRoute = match ($role) {
             'superadmin' => 'superadmin.dashboard',
             'management' => 'management.dashboard',
-            'finance'    => 'user.dashboard',
-            default      => 'user.dashboard',
+            'finance' => 'user.dashboard',
+            default => 'user.dashboard',
         };
+
         return redirect()->route($targetRoute);
     }
+
     return redirect()->route('login');
 });
 
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
-    $role = Illuminate\Support\Facades\Auth::user()->role;
+    $role = Auth::user()->role;
     $targetRoute = match ($role) {
         'superadmin' => 'superadmin.dashboard',
         'management' => 'management.dashboard',
-        'finance'    => 'user.dashboard',
-        default      => 'user.dashboard',
+        'finance' => 'user.dashboard',
+        default => 'user.dashboard',
     };
+
     return redirect()->route($targetRoute);
 })->name('dashboard');
 
@@ -107,11 +134,11 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
 Route::get('/company/{slug}', [PublicCompanyController::class, 'show'])->name('public.company.show');
 
 // Public Award Certificate Share Link
-Route::get('/award/share/{token}', [\App\Http\Controllers\PublicAwardController::class, 'show'])->name('public.award.show');
+Route::get('/award/share/{token}', [PublicAwardController::class, 'show'])->name('public.award.show');
 
 // Client Shared Portal Links
-Route::get('/shared/project/{token}', [\App\Http\Controllers\ClientPortalController::class, 'show'])->name('client.portal.show');
-Route::post('/shared/project/{token}/ask', [\App\Http\Controllers\ClientPortalController::class, 'submitQuestion'])->name('client.portal.ask');
+Route::get('/shared/project/{token}', [ClientPortalController::class, 'show'])->name('client.portal.show');
+Route::post('/shared/project/{token}/ask', [ClientPortalController::class, 'submitQuestion'])->name('client.portal.ask');
 
 // 1. Superadmin Area
 Route::middleware(['auth', 'verified', 'role:superadmin'])
@@ -129,12 +156,12 @@ Route::middleware(['auth', 'verified', 'role:superadmin'])
 
 // AI Settings (Scoped to each user account)
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/ai-settings', [\App\Http\Controllers\Superadmin\AISettingsController::class, 'index'])->name('ai-settings.index');
-    Route::post('/ai-settings', [\App\Http\Controllers\Superadmin\AISettingsController::class, 'store'])->name('ai-settings.store');
-    Route::put('/ai-settings/{aiSetting}', [\App\Http\Controllers\Superadmin\AISettingsController::class, 'update'])->name('ai-settings.update');
-    Route::delete('/ai-settings/{aiSetting}', [\App\Http\Controllers\Superadmin\AISettingsController::class, 'destroy'])->name('ai-settings.destroy');
-    Route::post('/ai-settings/{aiSetting}/activate', [\App\Http\Controllers\Superadmin\AISettingsController::class, 'activate'])->name('ai-settings.activate');
-    Route::post('/ai-settings/test', [\App\Http\Controllers\Superadmin\AISettingsController::class, 'test'])->name('ai-settings.test');
+    Route::get('/ai-settings', [AISettingsController::class, 'index'])->name('ai-settings.index');
+    Route::post('/ai-settings', [AISettingsController::class, 'store'])->name('ai-settings.store');
+    Route::put('/ai-settings/{aiSetting}', [AISettingsController::class, 'update'])->name('ai-settings.update');
+    Route::delete('/ai-settings/{aiSetting}', [AISettingsController::class, 'destroy'])->name('ai-settings.destroy');
+    Route::post('/ai-settings/{aiSetting}/activate', [AISettingsController::class, 'activate'])->name('ai-settings.activate');
+    Route::post('/ai-settings/test', [AISettingsController::class, 'test'])->name('ai-settings.test');
 });
 
 // 2. Management Area (Workspace, Project, Linimasa, Tasks, & Portfolio Settings)
@@ -228,8 +255,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/chatbot/query', [ChatbotController::class, 'query'])->name('chatbot.query');
 });
 
-use App\Http\Controllers\User\CompanyController as UserCompanyController;
-use App\Http\Controllers\User\ProjectController as UserProjectController;
+// Import statements moved to the top of the file
 
 // 4. Regular User Area
 Route::middleware(['auth', 'verified', 'role:user,finance,management,superadmin'])
@@ -267,9 +293,5 @@ Route::middleware(['auth', 'verified', 'role:user,finance,management,superadmin'
         Route::post('/wellbeing/award-points', [UserDashboard::class, 'awardPoints'])->name('wellbeing.award-points');
         Route::post('/wellbeing/generate-logic-quiz', [UserDashboard::class, 'generateLogicQuiz'])->name('wellbeing.generate-logic-quiz');
     });
-
-
-
-
 
 require __DIR__.'/auth.php';

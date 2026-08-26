@@ -13,6 +13,7 @@ class Project extends Model
     protected $fillable = [
         'company_profile_id',
         'created_by',
+        'demo_track_id',
         'name',
         'slug',
         'client_name',
@@ -51,28 +52,38 @@ class Project extends Model
 
     protected $casts = [
         'is_financial_transparent' => 'boolean',
-        'is_showcased'             => 'boolean',
-        'services_rendered'        => 'array',
-        'tech_stacks'              => 'array',
-        'gallery_images'           => 'array',
-        'client_testimonial'       => 'array',
-        'scope_included'           => 'array',
-        'scope_excluded'           => 'array',
-        'milestones'               => 'array',
-        'deliverables'             => 'array',
-        'team_matrix'              => 'array',
-        'documents'                => 'array',
-        'meeting_notes'            => 'array',
-        'start_date'               => 'date',
-        'deadline'                 => 'date',
+        'is_showcased' => 'boolean',
+        'services_rendered' => 'array',
+        'tech_stacks' => 'array',
+        'gallery_images' => 'array',
+        'client_testimonial' => 'array',
+        'scope_included' => 'array',
+        'scope_excluded' => 'array',
+        'milestones' => 'array',
+        'deliverables' => 'array',
+        'team_matrix' => 'array',
+        'documents' => 'array',
+        'meeting_notes' => 'array',
+        'start_date' => 'date',
+        'deadline' => 'date',
     ];
+
+    protected static function booted()
+    {
+        if (session()->has('demo_track_id')) {
+            $trackId = session()->get('demo_track_id');
+            static::addGlobalScope('demo_isolation', function ($builder) use ($trackId) {
+                $builder->where('demo_track_id', $trackId);
+            });
+        }
+    }
 
     protected static function boot()
     {
         parent::boot();
         static::saving(function ($project) {
-            if (empty($project->slug) && !empty($project->name)) {
-                $project->slug = Str::slug($project->name) . '-' . Str::random(5);
+            if (empty($project->slug) && ! empty($project->name)) {
+                $project->slug = Str::slug($project->name).'-'.Str::random(5);
             }
         });
     }
@@ -151,7 +162,7 @@ class Project extends Model
 
         $this->update([
             'progress_percentage' => $progress,
-            'current_stage'       => $stage,
+            'current_stage' => $stage,
         ]);
     }
 }

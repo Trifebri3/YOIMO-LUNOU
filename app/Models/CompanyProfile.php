@@ -12,6 +12,7 @@ class CompanyProfile extends Model
 
     protected $fillable = [
         'manager_id',
+        'demo_track_id',
         'company_name',
         'slug',
         'is_published',
@@ -29,10 +30,20 @@ class CompanyProfile extends Model
     ];
 
     protected $casts = [
-        'social_media'     => 'array',
+        'social_media' => 'array',
         'dynamic_sections' => 'array',
-        'is_published'     => 'boolean',
+        'is_published' => 'boolean',
     ];
+
+    protected static function booted()
+    {
+        if (session()->has('demo_track_id')) {
+            $trackId = session()->get('demo_track_id');
+            static::addGlobalScope('demo_isolation', function ($builder) use ($trackId) {
+                $builder->where('demo_track_id', $trackId);
+            });
+        }
+    }
 
     protected static function boot()
     {
@@ -40,7 +51,7 @@ class CompanyProfile extends Model
 
         // Otomatis buat slug jika belum ada saat create atau update nama
         static::saving(function ($company) {
-            if (empty($company->slug) && !empty($company->company_name)) {
+            if (empty($company->slug) && ! empty($company->company_name)) {
                 $company->slug = Str::slug($company->company_name);
             }
         });

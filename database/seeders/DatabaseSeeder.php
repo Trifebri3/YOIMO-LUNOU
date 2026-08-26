@@ -14,34 +14,38 @@ class DatabaseSeeder extends Seeder
 
         // 1. Superadmin
         User::create([
-            'name'     => 'Super Administrator',
-            'email'    => 'superadmin@gmail.com',
+            'name' => 'Super Administrator',
+            'email' => 'superadmin@gmail.com',
             'password' => $password,
-            'role'     => 'superadmin',
+            'role' => 'superadmin',
         ]);
 
         // 2. Management
         User::create([
-            'name'     => 'Manager Eksekutif',
-            'email'    => 'management@gmail.com',
+            'name' => 'Manager Eksekutif',
+            'email' => 'management@gmail.com',
             'password' => $password,
-            'role'     => 'management',
+            'role' => 'management',
         ]);
 
         // 3. Finance
         User::create([
-            'name'     => 'Staff Keuangan',
-            'email'    => 'finance@gmail.com',
+            'name' => 'Staff Keuangan',
+            'email' => 'finance@gmail.com',
             'password' => $password,
-            'role'     => 'finance',
+            'role' => 'finance',
         ]);
 
         // 4. User Biasa
         User::create([
-            'name'     => 'Client User',
-            'email'    => 'user@gmail.com',
+            'name' => 'Client User',
+            'email' => 'user@gmail.com',
             'password' => $password,
-            'role'     => 'user',
+            'role' => 'user',
         ]);
+
+        if (! app()->runningUnitTests()) {
+            $this->call(DemoDummySeeder::class);
+        }
     }
 }
