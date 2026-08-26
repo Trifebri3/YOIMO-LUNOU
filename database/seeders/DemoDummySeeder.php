@@ -23,6 +23,15 @@ class DemoDummySeeder extends Seeder
      */
     public function run(?int $demoTrackId = null): void
     {
+        // Cleanup existing company profiles and projects for this track (or where null if base seeder) to prevent duplicates
+        if ($demoTrackId) {
+            CompanyProfile::withoutGlobalScopes()->where('demo_track_id', $demoTrackId)->delete();
+            Project::withoutGlobalScopes()->where('demo_track_id', $demoTrackId)->delete();
+        } else {
+            CompanyProfile::withoutGlobalScopes()->whereNull('demo_track_id')->delete();
+            Project::withoutGlobalScopes()->whereNull('demo_track_id')->delete();
+        }
+
         // 0. Ensure users exist and fetch their IDs dynamically
         $manager = User::where('role', 'management')->first();
         if (! $manager) {

@@ -2,7 +2,7 @@
     <!-- Kolom Kiri: Judul Halaman & Mobile Breadcrumb -->
     <div class="flex items-center gap-3">
         <!-- Tombol Mobile Menu Trigger -->
-        <button type="button" onclick="toggleSidebar()" class="p-2 text-slate-500 hover:bg-slate-100 rounded-xl md:hidden">
+        <button type="button" onclick="toggleSidebar()" class="p-2 text-slate-500 hover:bg-slate-100 rounded-xl xl:hidden">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
 

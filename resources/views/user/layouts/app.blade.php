@@ -35,7 +35,7 @@
 
     <!-- Sidebar Desktop & Mobile Drawer -->
     @include('user.layouts.partials.sidebar')
-    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-40 hidden xl:hidden" onclick="toggleSidebar()"></div>
 
     <!-- Konten Utama + Header + Footer -->
     <div class="flex-1 flex flex-col min-w-0 min-h-screen overflow-y-auto pb-16 md:pb-0">

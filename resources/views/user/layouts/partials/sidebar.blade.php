@@ -32,12 +32,12 @@
     );
 @endphp
 
-<aside id="mobile-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-100 flex flex-col justify-between h-screen shrink-0 font-sans select-none hidden md:flex md:sticky md:top-0">
+<aside id="mobile-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-100 flex flex-col justify-between h-screen shrink-0 font-sans select-none hidden xl:flex xl:sticky xl:top-0">
     <div class="p-6 space-y-6">
         <!-- Logo Area -->
         <div class="flex items-center justify-between gap-3">
             <img src="{{ asset('logopanjang.png') }}" alt="Logo" class="h-8 w-auto">
-            <button type="button" onclick="toggleSidebar()" class="p-1.5 text-slate-500 hover:bg-slate-100 rounded-xl md:hidden" title="Close Menu">
+            <button type="button" onclick="toggleSidebar()" class="p-1.5 text-slate-500 hover:bg-slate-100 rounded-xl xl:hidden" title="Close Menu">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>

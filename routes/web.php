@@ -51,6 +51,24 @@ Route::post('/demo-login', function (Request $request) {
         return redirect()->back()->with('error', 'Token demo tidak valid.');
     }
 
+    // Clean up any existing demo tracks for the same email or current session to prevent data accumulation/duplication
+    try {
+        $trackIdsToDelete = collect();
+
+        if (session()->has('demo_track_id')) {
+            $trackIdsToDelete->push(session()->get('demo_track_id'));
+        }
+
+        $emailTracks = DB::table('demo_tracks')->where('email', $email)->pluck('id');
+        $trackIdsToDelete = $trackIdsToDelete->concat($emailTracks)->unique()->filter();
+
+        if ($trackIdsToDelete->isNotEmpty()) {
+            DB::table('demo_tracks')->whereIn('id', $trackIdsToDelete)->delete();
+        }
+    } catch (Exception $e) {
+        Log::error('Failed to clean up old demo tracks: '.$e->getMessage());
+    }
+
     $trackId = null;
     try {
         $trackId = DB::table('demo_tracks')->insertGetId([

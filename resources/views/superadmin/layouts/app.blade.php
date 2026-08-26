@@ -24,7 +24,7 @@
 
     <!-- Sidebar Modular Drawer -->
     @include('superadmin.layouts.partials.sidebar')
-    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-40 hidden xl:hidden" onclick="toggleSidebar()"></div>
 
     <!-- Main Content Wrapper -->
     <div class="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
