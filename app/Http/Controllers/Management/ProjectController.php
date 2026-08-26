@@ -716,19 +716,4 @@ public function agendas()
             
         return back()->with('success', 'Pertanyaan klien berhasil dijawab.');
     }
-
-    /**
-     * Hapus project dari database
-     */
-    public function destroy(Project $project): \Illuminate\Http\RedirectResponse
-    {
-        $company = \App\Models\CompanyProfile::where('manager_id', \Illuminate\Support\Facades\Auth::id())->first();
-        if (!$company && \Illuminate\Support\Facades\Auth::user()->role !== 'superadmin') {
-            return back()->with('error', 'Anda tidak memiliki hak akses untuk menghapus proyek ini.');
-        }
-        
-        $project->delete();
-        
-        return redirect()->route('management.projects.index')->with('success', 'Proyek berhasil dihapus beserta semua data di dalamnya.');
-    }
 }
