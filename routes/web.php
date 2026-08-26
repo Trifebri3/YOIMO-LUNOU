@@ -189,6 +189,7 @@ Route::middleware(['auth', 'verified', 'role:management,superadmin'])
     ->group(function () {
         Route::get('/dashboard', [ManagementDashboard::class, 'index'])->name('dashboard');
         Route::get('/company/{company}/workspace', [ManagementCompanyController::class, 'workspace'])->name('company.workspace');
+        Route::post('/company/{company}/add-user', [ManagementCompanyController::class, 'addUser'])->name('company.add-user');
         Route::get('/company/{company}/wellbeing', [ManagementCompanyController::class, 'wellbeingReport'])->name('company.wellbeing');
         Route::resource('company', ManagementCompanyController::class)->except(['create', 'store', 'destroy']);
         Route::post('/company/{company}/generate-ai', [ManagementCompanyController::class, 'generateCompanyAi'])->name('company.generate-ai');

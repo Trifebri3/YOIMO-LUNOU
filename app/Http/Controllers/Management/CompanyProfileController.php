@@ -14,9 +14,11 @@ use App\Services\AIService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CompanyProfileController extends Controller
@@ -394,5 +396,31 @@ class CompanyProfileController extends Controller
                 'message' => 'Gagal merancang profil perusahaan: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    public function addUser(Request $request, CompanyProfile $company): RedirectResponse
+    {
+        $this->authorizeAccess($company);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'phone' => ['required', 'string', 'max:20'],
+            'position' => ['required', 'string', 'max:100'],
+            'role' => ['required', Rule::in(['user', 'finance', 'management'])],
+            'password' => ['required', 'string', 'min:8'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+        ]);
+
+        $validated['company_profile_id'] = $company->id;
+        $validated['password'] = Hash::make($validated['password']);
+
+        if ($request->hasFile('avatar')) {
+            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        User::create($validated);
+
+        return back()->with('success', 'Anggota tim baru berhasil ditambahkan ke workspace!');
     }
 }

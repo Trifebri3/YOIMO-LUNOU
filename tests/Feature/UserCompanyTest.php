@@ -82,3 +82,24 @@ test('project create page filters selectable team members by company', function 
     $response->assertSee($user->name);
     $response->assertDontSee($otherUser->name);
 });
+
+test('management can add a new user to their company workspace', function () {
+    $manager = User::where('role', 'management')->first();
+
+    $response = $this->actingAs($manager)
+        ->post(route('management.company.add-user', $this->company->id), [
+            'name' => 'New Workspace Employee',
+            'email' => 'newemployee@example.com',
+            'phone' => '08122334455',
+            'position' => 'UI Designer',
+            'role' => 'user',
+            'password' => 'password123',
+        ]);
+
+    $response->assertRedirect();
+
+    $newEmployee = User::where('email', 'newemployee@example.com')->first();
+    expect($newEmployee)->not->toBeNull();
+    expect($newEmployee->company_profile_id)->toBe($this->company->id);
+    expect($newEmployee->phone)->toBe('628122334455'); // Standardized phone number mutator check!
+});
