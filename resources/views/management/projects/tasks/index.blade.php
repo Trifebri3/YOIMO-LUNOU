@@ -316,6 +316,21 @@
                                 </form>
                             @endif
 
+                            <!-- Assign Dropdown (Management/Superadmin Only) -->
+                            @if(Auth::user()->role === 'management' || Auth::user()->role === 'superadmin')
+                                <form method="POST" action="{{ route('management.projects.tasks.assign', [$project->id, $task->id]) }}" class="flex items-center gap-1.5">
+                                    @csrf
+                                    <select name="assigned_to" onchange="this.form.submit()" class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none max-w-[140px] cursor-pointer">
+                                        <option value="">-- Hubungkan Petugas --</option>
+                                        @foreach($teamMembers as $member)
+                                            <option value="{{ $member->id }}" {{ $task->assigned_to === $member->id ? 'selected' : '' }}>
+                                                {{ $member->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </form>
+                            @endif
+
                             <!-- Tombol Kirim Laporan -->
                             @if($isOpenTask || $isMyTask || Auth::user()->role === 'management')
                                 <button type="button" onclick="openSubmitModal({{ $task->id }}, '{{ addslashes($task->title) }}')" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all">

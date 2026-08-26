@@ -9,6 +9,7 @@ use App\Models\ProjectActivityLog;
 use App\Models\ProjectRoadmap;
 use App\Models\ProjectTask;
 use App\Models\User;
+use App\Notifications\TaskNotification;
 use App\Services\AIService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\RedirectResponse;
@@ -36,7 +37,13 @@ class TaskController extends Controller
         $assignedUserIds = collect($project->team_matrix ?? [])->pluck('user_id')->unique();
         $teamMembers = User::whereIn('id', $assignedUserIds)->get();
         if ($teamMembers->isEmpty()) {
-            $teamMembers = User::where('company_profile_id', $project->company_profile_id)
+            $managerId = CompanyProfile::where('id', $project->company_profile_id)->value('manager_id');
+            $teamMembers = User::where(function ($query) use ($project, $managerId) {
+                $query->where('company_profile_id', $project->company_profile_id);
+                if ($managerId) {
+                    $query->orWhere('id', $managerId);
+                }
+            })
                 ->whereIn('role', ['user', 'finance', 'management'])
                 ->get();
         }
@@ -86,6 +93,8 @@ class TaskController extends Controller
         if ($task->assigned_to) {
             $task->load('assignee', 'project');
             if ($task->assignee) {
+                $task->assignee->notify(new TaskNotification($task, 'created'));
+
                 if ($task->assignee->email) {
                     try {
                         Mail::to($task->assignee->email)->send(new TaskNotificationMail($task, 'created'));
@@ -126,6 +135,19 @@ class TaskController extends Controller
 
         $task->load('assignee', 'project');
         if ($task->assignee) {
+            // Notify project creator / manager
+            $projectCreator = User::find($task->project->created_by);
+            if ($projectCreator && $projectCreator->id !== Auth::id()) {
+                $projectCreator->notify(new TaskNotification($task, 'claimed'));
+            }
+            $companyManagerId = $task->project->company->manager_id ?? null;
+            if ($companyManagerId && $companyManagerId !== Auth::id() && $companyManagerId !== ($projectCreator->id ?? null)) {
+                $companyManager = User::find($companyManagerId);
+                if ($companyManager) {
+                    $companyManager->notify(new TaskNotification($task, 'claimed'));
+                }
+            }
+
             if ($task->assignee->email) {
                 try {
                     Mail::to($task->assignee->email)->send(new TaskNotificationMail($task, 'updated'));
@@ -184,6 +206,18 @@ class TaskController extends Controller
         if ($task->assigned_to) {
             $task->load('assignee', 'project');
             if ($task->assignee) {
+                // Notify the assignee if modified by someone else (e.g. manager)
+                if (Auth::id() !== $task->assigned_to) {
+                    $task->assignee->notify(new TaskNotification($task, 'updated'));
+                }
+                // Notify the creator/manager if modified by assignee
+                if (Auth::id() === $task->assigned_to) {
+                    $projectCreator = User::find($task->project->created_by);
+                    if ($projectCreator && $projectCreator->id !== Auth::id()) {
+                        $projectCreator->notify(new TaskNotification($task, 'updated'));
+                    }
+                }
+
                 if ($task->assignee->email) {
                     try {
                         Mail::to($task->assignee->email)->send(new TaskNotificationMail($task, 'updated'));
@@ -241,6 +275,19 @@ class TaskController extends Controller
         }
 
         $task->update($updateData);
+
+        // Notify project creator / manager
+        $projectCreator = User::find($task->project->created_by);
+        if ($projectCreator && $projectCreator->id !== Auth::id()) {
+            $projectCreator->notify(new TaskNotification($task, 'submitted'));
+        }
+        $companyManagerId = $task->project->company->manager_id ?? null;
+        if ($companyManagerId && $companyManagerId !== Auth::id() && $companyManagerId !== ($projectCreator->id ?? null)) {
+            $companyManager = User::find($companyManagerId);
+            if ($companyManager) {
+                $companyManager->notify(new TaskNotification($task, 'submitted'));
+            }
+        }
 
         // Catat Audit Log
         ProjectActivityLog::record($project->id, 'Task', 'SUBMIT', "Mengirimkan laporan hasil kerja untuk tugas: '{$task->title}'");
@@ -691,5 +738,32 @@ class TaskController extends Controller
 
             return back()->with('error', 'Gagal memproses pembuatan tugas otomatis: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Direct assign task to team member
+     */
+    public function assign(Request $request, Project $project, ProjectTask $task): RedirectResponse
+    {
+        $request->validate([
+            'assigned_to' => ['nullable', 'exists:users,id'],
+        ]);
+
+        $prevAssigneeId = $task->assigned_to;
+        $newAssigneeId = $request->input('assigned_to');
+
+        $task->update([
+            'assigned_to' => $newAssigneeId,
+        ]);
+
+        // Trigger notification if assigned to someone new
+        if ($newAssigneeId && $newAssigneeId != $prevAssigneeId) {
+            $assignee = User::find($newAssigneeId);
+            if ($assignee) {
+                $assignee->notify(new TaskNotification($task, 'assigned'));
+            }
+        }
+
+        return back()->with('success', 'Petugas tugas berhasil diperbarui.');
     }
 }

@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ChatArchive;
 use App\Models\Project;
 use App\Models\ProjectMessage;
 use App\Models\ProjectTask;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -19,28 +21,54 @@ class ChatController extends Controller
     public function index(Request $request): View
     {
         $userId = Auth::id();
+        $showArchived = $request->query('filter') === 'archived';
+
+        // Get archived ids for the user
+        $archivedUserIds = ChatArchive::where('user_id', $userId)
+            ->whereNotNull('archived_user_id')
+            ->pluck('archived_user_id')
+            ->toArray();
+
+        $archivedProjectIds = ChatArchive::where('user_id', $userId)
+            ->whereNotNull('archived_project_id')
+            ->pluck('archived_project_id')
+            ->toArray();
+
+        $archivedChatsCount = count($archivedUserIds) + count($archivedProjectIds);
 
         // 1. Ambil list personal contacts (semua user kecuali diri sendiri)
+        $contactsQuery = User::where('id', '!=', $userId);
         if (session()->has('demo_track_id')) {
-            $contacts = User::whereIn('email', ['management@gmail.com', 'user@gmail.com'])
-                ->where('id', '!=', $userId)
-                ->get(['id', 'name', 'email', 'role', 'position', 'avatar']);
-        } else {
-            $contacts = User::where('id', '!=', $userId)
-                ->orderBy('name', 'asc')
-                ->get(['id', 'name', 'email', 'role', 'position', 'avatar']);
+            $contactsQuery->whereIn('email', ['management@gmail.com', 'user@gmail.com']);
         }
 
-        // 2. Ambil list project group (semua proyek yang ada)
-        $groups = Project::orderBy('name', 'asc')->get(['id', 'name', 'category', 'status']);
+        if ($showArchived) {
+            $contactsQuery->whereIn('id', $archivedUserIds);
+        } else {
+            $contactsQuery->whereNotIn('id', $archivedUserIds);
+        }
+        $contacts = $contactsQuery->orderBy('name', 'asc')
+            ->get(['id', 'name', 'email', 'role', 'position', 'avatar']);
+
+        // 2. Ambil list project group (semua proyek yang aktif/belum diarsip)
+        $groupsQuery = Project::where('is_archived', false);
+        if ($showArchived) {
+            $groupsQuery->whereIn('id', $archivedProjectIds);
+        } else {
+            $groupsQuery->whereNotIn('id', $archivedProjectIds);
+        }
+        $groups = $groupsQuery->orderBy('name', 'asc')
+            ->get(['id', 'name', 'category', 'status']);
 
         // 3. Tentukan chat aktif
         $activeUser = null;
         $activeProject = null;
         $messages = collect();
+        $isActiveChatArchived = false;
 
         if ($request->filled('user_id')) {
             $activeUser = User::findOrFail($request->user_id);
+            $isActiveChatArchived = in_array($activeUser->id, $archivedUserIds);
 
             // Tandai sudah dibaca
             ProjectMessage::where('sender_id', $activeUser->id)
@@ -60,6 +88,7 @@ class ChatController extends Controller
 
         } elseif ($request->filled('project_id')) {
             $activeProject = Project::findOrFail($request->project_id);
+            $isActiveChatArchived = in_array($activeProject->id, $archivedProjectIds);
 
             // Ambil histori chat group project
             $messages = ProjectMessage::with(['sender', 'task.project'])
@@ -76,7 +105,17 @@ class ChatController extends Controller
             $availableTasks = ProjectTask::where('project_id', $activeProject->id)->latest()->get();
         }
 
-        return view('chat.index', compact('contacts', 'groups', 'activeUser', 'activeProject', 'messages', 'availableTasks'));
+        return view('chat.index', compact(
+            'contacts',
+            'groups',
+            'activeUser',
+            'activeProject',
+            'messages',
+            'availableTasks',
+            'showArchived',
+            'archivedChatsCount',
+            'isActiveChatArchived'
+        ));
     }
 
     /**
@@ -136,6 +175,7 @@ class ChatController extends Controller
                 'attachment_url' => $msg->attachment_file ? asset('storage/'.$msg->attachment_file) : null,
                 'attachment_name' => $msg->attachment_name,
                 'created_at' => $msg->created_at->format('H:i'),
+                'is_read' => (bool) $msg->is_read,
                 'task' => $msg->task ? [
                     'id' => $msg->task->id,
                     'title' => $msg->task->title,
@@ -190,6 +230,7 @@ class ChatController extends Controller
                 'attachment_url' => $msg->attachment_file ? asset('storage/'.$msg->attachment_file) : null,
                 'attachment_name' => $msg->attachment_name,
                 'created_at' => $msg->created_at->format('H:i'),
+                'is_read' => (bool) $msg->is_read,
                 'task' => $msg->task ? [
                     'id' => $msg->task->id,
                     'title' => $msg->task->title,
@@ -201,5 +242,55 @@ class ChatController extends Controller
         });
 
         return response()->json(['messages' => $formatted]);
+    }
+
+    /**
+     * Archive/Unarchive a chat (Direct User or Project Group)
+     */
+    public function toggleArchive(Request $request): RedirectResponse
+    {
+        $userId = Auth::id();
+        $targetUserId = $request->input('user_id');
+        $targetProjectId = $request->input('project_id');
+
+        if ($targetUserId) {
+            $existing = ChatArchive::where('user_id', $userId)
+                ->where('archived_user_id', $targetUserId)
+                ->first();
+
+            if ($existing) {
+                $existing->delete();
+
+                return back()->with('success', 'Chat berhasil dipulihkan dari arsip.');
+            } else {
+                ChatArchive::create([
+                    'user_id' => $userId,
+                    'archived_user_id' => $targetUserId,
+                ]);
+
+                return redirect()->route('chat.index')->with('success', 'Chat berhasil diarsipkan.');
+            }
+        }
+
+        if ($targetProjectId) {
+            $existing = ChatArchive::where('user_id', $userId)
+                ->where('archived_project_id', $targetProjectId)
+                ->first();
+
+            if ($existing) {
+                $existing->delete();
+
+                return back()->with('success', 'Grup berhasil dipulihkan dari arsip.');
+            } else {
+                ChatArchive::create([
+                    'user_id' => $userId,
+                    'archived_project_id' => $targetProjectId,
+                ]);
+
+                return redirect()->route('chat.index')->with('success', 'Grup berhasil diarsipkan.');
+            }
+        }
+
+        return back()->with('error', 'Target chat tidak valid.');
     }
 }

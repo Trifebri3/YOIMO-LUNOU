@@ -308,61 +308,39 @@
         <div class="flex items-center justify-between">
             <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
                 <svg class="w-4 h-4 text-emerald-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
-                <span>Tambah Anggota Tim Baru</span>
+                <span>Masukkan Anggota Tim</span>
             </h3>
             <button type="button" onclick="closeAddUserModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer">&times;</button>
         </div>
 
-        <form action="{{ route('management.company.add-user', $company->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
-            @csrf
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5 font-sans">Nama Lengkap</label>
-                <input type="text" name="name" required placeholder="Nama lengkap anggota..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-emerald-500">
+        @if($availableUsers->isEmpty())
+            <div class="p-4 bg-amber-50 border border-amber-100 rounded-2xl text-xs text-amber-700 font-medium">
+                Semua user terdaftar sudah dimasukkan ke dalam perusahaan ini. Silakan buat/daftarkan user baru terlebih dahulu melalui panel Superadmin.
             </div>
-
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5 font-sans">Alamat Email</label>
-                <input type="email" name="email" required placeholder="email@example.com" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-emerald-500">
+            <div class="flex justify-end pt-2">
+                <button type="button" onclick="closeAddUserModal()" class="px-5 py-2.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl cursor-pointer">Tutup</button>
             </div>
-
-            <div class="grid grid-cols-2 gap-3">
+        @else
+            <form action="{{ route('management.company.add-user', $company->id) }}" method="POST" class="space-y-4">
+                @csrf
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5 font-sans">WhatsApp</label>
-                    <input type="text" name="phone" required placeholder="0812xxx" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-emerald-500">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5 font-sans">Jabatan</label>
-                    <input type="text" name="position" required placeholder="Developer, Designer..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-emerald-500">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5 font-sans">Role Akses</label>
-                    <select name="role" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-emerald-500 text-slate-800">
-                        <option value="user">User (Client/Portal)</option>
-                        <option value="finance">Finance (Keuangan)</option>
-                        <option value="management">Management (Eksekutif)</option>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5 font-sans">Pilih User Terdaftar</label>
+                    <select name="user_id" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:ring-emerald-500 text-slate-800">
+                        <option value="">-- Pilih User --</option>
+                        @foreach($availableUsers as $u)
+                            <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }} - {{ strtoupper($u->role) }})</option>
+                        @endforeach
                     </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5 font-sans">Password</label>
-                    <input type="password" name="password" required placeholder="Minimal 8 karakter..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-emerald-500">
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeAddUserModal()" class="px-4 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl cursor-pointer">Batal</button>
+                    <button type="submit" class="px-6 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-emerald-700 cursor-pointer">
+                        Tambahkan Anggota
+                    </button>
                 </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5 font-sans">Foto Profil (Opsional)</label>
-                <input type="file" name="avatar" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
-            </div>
-
-            <div class="flex justify-end gap-2 pt-2">
-                <button type="button" onclick="closeAddUserModal()" class="px-4 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl cursor-pointer">Batal</button>
-                <button type="submit" class="px-6 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-emerald-700 cursor-pointer">
-                    Simpan Anggota
-                </button>
-            </div>
-        </form>
+            </form>
+        @endif
     </div>
 </div>
 

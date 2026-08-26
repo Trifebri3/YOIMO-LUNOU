@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Middleware\DemoAuthMiddleware;
+use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\UpdateUserLastSeen;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -10,16 +14,17 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule): void {
+    ->withSchedule(function (Schedule $schedule): void {
         $schedule->command('send:deadline-reminders')->dailyAt('08:00');
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\DemoAuthMiddleware::class,
+            DemoAuthMiddleware::class,
+            UpdateUserLastSeen::class,
         ]);
         // Daftarkan alias middleware role di sini
         $middleware->alias([
-            'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'role' => RoleMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

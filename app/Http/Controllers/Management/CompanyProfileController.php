@@ -14,11 +14,9 @@ use App\Services\AIService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class CompanyProfileController extends Controller
@@ -125,8 +123,16 @@ class CompanyProfileController extends Controller
         // Ambil semua proyek yang terkait dengan company ini
         $projects = Project::where('company_profile_id', $company->id)->latest()->get();
 
-        // Ambil list semua member tim internal yang ter-embed di company ini
-        $teamMembers = User::where('company_profile_id', $company->id)->get();
+        // Ambil list semua member tim internal yang ter-embed di company ini (termasuk manager)
+        $teamMembers = User::where('company_profile_id', $company->id)
+            ->orWhere('id', $company->manager_id)
+            ->get();
+
+        // Ambil list semua user yang belum ter-embed di company manapun (unassigned)
+        $availableUsers = User::whereNotIn('role', ['superadmin', 'management'])
+            ->whereNull('company_profile_id')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email', 'role']);
 
         // Ambil ID semua anggota tim yang berpartisipasi dalam proyek company ini
         $employeeIds = [];
@@ -182,6 +188,7 @@ class CompanyProfileController extends Controller
             'company',
             'projects',
             'teamMembers',
+            'availableUsers',
             'avgEnergy',
             'avgMental',
             'avgRest',
@@ -403,24 +410,23 @@ class CompanyProfileController extends Controller
         $this->authorizeAccess($company);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'phone' => ['required', 'string', 'max:20'],
-            'position' => ['required', 'string', 'max:100'],
-            'role' => ['required', Rule::in(['user', 'finance', 'management'])],
-            'password' => ['required', 'string', 'min:8'],
-            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'user_id' => [
+                'required',
+                'exists:users,id',
+                function ($attribute, $value, $fail) {
+                    $user = User::find($value);
+                    if ($user && $user->role === 'superadmin') {
+                        $fail('Tidak dapat memasukkan user dengan role superadmin.');
+                    }
+                },
+            ],
         ]);
 
-        $validated['company_profile_id'] = $company->id;
-        $validated['password'] = Hash::make($validated['password']);
+        $user = User::findOrFail($validated['user_id']);
+        $user->update([
+            'company_profile_id' => $company->id,
+        ]);
 
-        if ($request->hasFile('avatar')) {
-            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
-        }
-
-        User::create($validated);
-
-        return back()->with('success', 'Anggota tim baru berhasil ditambahkan ke workspace!');
+        return back()->with('success', 'Anggota tim berhasil dimasukkan ke workspace!');
     }
 }

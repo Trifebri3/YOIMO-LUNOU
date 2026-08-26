@@ -48,6 +48,7 @@ class Project extends Model
         'team_matrix',
         'documents',
         'meeting_notes',
+        'is_archived',
     ];
 
     protected $casts = [
@@ -66,6 +67,7 @@ class Project extends Model
         'meeting_notes' => 'array',
         'start_date' => 'date',
         'deadline' => 'date',
+        'is_archived' => 'boolean',
     ];
 
     protected static function booted()

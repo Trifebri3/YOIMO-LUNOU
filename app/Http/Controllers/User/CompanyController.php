@@ -26,9 +26,11 @@ class CompanyController extends Controller
         $companyProjects = Project::where('company_profile_id', $company->id)
             ->where(function ($q) use ($userId) {
                 $q->whereJsonContains('team_matrix', ['user_id' => (string) $userId])
-                  ->orWhereJsonContains('team_matrix', ['user_id' => (int) $userId])
-                  ->orWhere('created_by', $userId)
-                  ->orWhere('is_showcased', true);
+                    ->orWhereJsonContains('team_matrix', ['user_id' => (int) $userId])
+                    ->orWhere('team_matrix', 'like', '%"user_id":'.$userId.'%')
+                    ->orWhere('team_matrix', 'like', '%"user_id":"'.$userId.'"%')
+                    ->orWhere('created_by', $userId)
+                    ->orWhere('is_showcased', true);
             })
             ->with(['roadmaps', 'tasks'])
             ->latest()

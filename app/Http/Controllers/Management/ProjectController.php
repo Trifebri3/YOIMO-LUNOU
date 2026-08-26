@@ -21,18 +21,35 @@ use Illuminate\View\View;
 
 class ProjectController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         // Ambil project yang berada di bawah perusahaan yang dikelola user management ini
         $myCompanyIds = CompanyProfile::where('manager_id', Auth::id())->pluck('id');
 
-        $projects = Project::whereIn('company_profile_id', $myCompanyIds)
-            ->orWhere('created_by', Auth::id())
+        $isArchived = $request->query('filter') === 'archived';
+
+        $projects = Project::where('is_archived', $isArchived)
+            ->where(function ($query) use ($myCompanyIds) {
+                $query->whereIn('company_profile_id', $myCompanyIds)
+                    ->orWhere('created_by', Auth::id());
+            })
             ->with(['company', 'creator'])
             ->latest()
             ->paginate(10);
 
-        return view('management.projects.index', compact('projects'));
+        $activeCount = Project::where('is_archived', false)
+            ->where(function ($query) use ($myCompanyIds) {
+                $query->whereIn('company_profile_id', $myCompanyIds)
+                    ->orWhere('created_by', Auth::id());
+            })->count();
+
+        $archivedCount = Project::where('is_archived', true)
+            ->where(function ($query) use ($myCompanyIds) {
+                $query->whereIn('company_profile_id', $myCompanyIds)
+                    ->orWhere('created_by', Auth::id());
+            })->count();
+
+        return view('management.projects.index', compact('projects', 'isArchived', 'activeCount', 'archivedCount'));
     }
 
     public function create(Request $request): View
@@ -50,8 +67,14 @@ class ProjectController extends Controller
 
         $companyId = $selectedCompany ? $selectedCompany->id : null;
 
-        // Ambil hanya user yang ter-embed di company ini dengan role 'user', 'finance', atau 'management'
-        $teamMembers = User::where('company_profile_id', $companyId)
+        // Ambil hanya user yang ter-embed di company ini (termasuk manager) dengan role 'user', 'finance', atau 'management'
+        $managerId = $selectedCompany ? $selectedCompany->manager_id : null;
+        $teamMembers = User::where(function ($query) use ($companyId, $managerId) {
+            $query->where('company_profile_id', $companyId);
+            if ($managerId) {
+                $query->orWhere('id', $managerId);
+            }
+        })
             ->whereIn('role', ['user', 'finance', 'management'])
             ->orderBy('role', 'asc')
             ->orderBy('name', 'asc')
@@ -177,8 +200,14 @@ class ProjectController extends Controller
 
         $companyId = $project->company_profile_id;
 
-        // Ambil hanya user yang ter-embed di company ini dengan role 'user', 'finance', atau 'management'
-        $teamMembers = User::where('company_profile_id', $companyId)
+        // Ambil hanya user yang ter-embed di company ini (termasuk manager) dengan role 'user', 'finance', atau 'management'
+        $managerId = CompanyProfile::where('id', $companyId)->value('manager_id');
+        $teamMembers = User::where(function ($query) use ($companyId, $managerId) {
+            $query->where('company_profile_id', $companyId);
+            if ($managerId) {
+                $query->orWhere('id', $managerId);
+            }
+        })
             ->whereIn('role', ['user', 'finance', 'management'])
             ->orderBy('role', 'asc')
             ->orderBy('name', 'asc')
@@ -729,5 +758,26 @@ class ProjectController extends Controller
             ]);
 
         return back()->with('success', 'Pertanyaan klien berhasil dijawab.');
+    }
+
+    /**
+     * Arsipkan atau aktifkan kembali proyek
+     */
+    public function toggleArchive(Project $project): RedirectResponse
+    {
+        $myCompanyIds = CompanyProfile::where('manager_id', Auth::id())->pluck('id');
+        if ($project->created_by !== Auth::id() && ! $myCompanyIds->contains($project->company_profile_id)) {
+            abort(403, 'Akses Ditolak: Anda bukan pemilik atau pengelola proyek ini.');
+        }
+
+        $project->update([
+            'is_archived' => ! $project->is_archived,
+        ]);
+
+        $message = $project->is_archived
+            ? 'Project berhasil diarsipkan (disembunyikan dari daftar aktif).'
+            : 'Project berhasil diaktifkan kembali.';
+
+        return back()->with('success', $message);
     }
 }

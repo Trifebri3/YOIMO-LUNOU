@@ -7,16 +7,24 @@ use App\Models\Project;
 use App\Models\ProjectAgenda;
 use App\Models\ProjectDocument;
 use App\Models\ProjectTask;
+use App\Models\UserAward;
+use App\Models\UserPoint;
+use App\Models\UserPointLog;
 use App\Models\WellbeingCheckin;
-use App\Models\WellbeingJournal;
 use App\Models\WellbeingGoal;
-use App\Models\WellbeingReflection;
+use App\Models\WellbeingJournal;
 use App\Models\WellbeingLeftThought;
+use App\Models\WellbeingReflection;
+use App\Services\AIService;
+use App\Services\GamificationService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\JsonResponse;
 
 class DashboardController extends Controller
 {
@@ -25,12 +33,16 @@ class DashboardController extends Controller
         $userId = Auth::id();
 
         // Cek login harian & berikan poin
-        \App\Services\GamificationService::checkDailyLogin($userId);
+        GamificationService::checkDailyLogin($userId);
 
         // 1. Ambil Proyek yang melibatkan user
-        $myProjects = Project::whereJsonContains('team_matrix', ['user_id' => (string) $userId])
-            ->orWhereJsonContains('team_matrix', ['user_id' => (int) $userId])
-            ->orWhere('created_by', $userId)
+        $myProjects = Project::where(function ($query) use ($userId) {
+            $query->whereJsonContains('team_matrix', ['user_id' => (string) $userId])
+                ->orWhereJsonContains('team_matrix', ['user_id' => (int) $userId])
+                ->orWhere('team_matrix', 'like', '%"user_id":'.$userId.'%')
+                ->orWhere('team_matrix', 'like', '%"user_id":"'.$userId.'"%')
+                ->orWhere('created_by', $userId);
+        })
             ->with(['roadmaps'])
             ->latest()
             ->get();
@@ -59,7 +71,7 @@ class DashboardController extends Controller
         $todoCount = ProjectTask::where('assigned_to', $userId)->where('status', 'Todo')->count();
         $reviewCount = ProjectTask::where('assigned_to', $userId)->where('status', 'Review')->count();
         $completedCount = ProjectTask::where('assigned_to', $userId)->where('status', 'Completed')->count();
-        
+
         $completionRate = $totalAssigned > 0 ? round(($completedCount / $totalAssigned) * 100) : 0;
 
         // 4. Deadlines Radar (Tugas yang mendekati tenggat waktu dalam 7 hari ke depan)
@@ -74,8 +86,8 @@ class DashboardController extends Controller
         $myAgendas = ProjectAgenda::whereIn('project_id', $projectIds)
             ->where(function ($query) use ($userId) {
                 $query->whereJsonContains('attendee_ids', (string) $userId)
-                      ->orWhereJsonContains('attendee_ids', (int) $userId)
-                      ->orWhere('created_by', $userId);
+                    ->orWhereJsonContains('attendee_ids', (int) $userId)
+                    ->orWhere('created_by', $userId);
             })
             ->whereDate('start_date', '>=', now()->toDateString())
             ->orderBy('start_date', 'asc')
@@ -88,7 +100,8 @@ class DashboardController extends Controller
             ->get()
             ->filter(function ($doc) use ($userId) {
                 $readers = $doc->readers_log ?? [];
-                return !collect($readers)->contains('user_id', $userId);
+
+                return ! collect($readers)->contains('user_id', $userId);
             });
 
         // 7. Tugas Terbuka (Open Pool Tasks) yang bisa diklaim oleh user di proyeknya
@@ -104,7 +117,7 @@ class DashboardController extends Controller
         $personalGoals = WellbeingGoal::where('user_id', $userId)->latest()->get();
         $latestJournal = WellbeingJournal::where('user_id', $userId)->latest()->first();
         $myJournals = WellbeingJournal::where('user_id', $userId)->latest()->get();
-        
+
         $currentWeekStr = now()->format('Y-\WW'); // e.g. 2026-W34
         $weeklyReflection = WellbeingReflection::where('user_id', $userId)->where('week_number', $currentWeekStr)->first();
 
@@ -114,69 +127,70 @@ class DashboardController extends Controller
         $overdueTasksCount = ProjectTask::where('assigned_to', $userId)->where('status', '!=', 'Completed')
             ->whereNotNull('due_date')->whereDate('due_date', '<', now()->toDateString())->count();
 
-        $workloadAdvice = "Beban pekerjaanmu terpantau stabil minggu ini. Tetap jaga ritme kerja yang seimbang ya!";
-        $workloadSeverity = "low"; // low, medium, high
+        $workloadAdvice = 'Beban pekerjaanmu terpantau stabil minggu ini. Tetap jaga ritme kerja yang seimbang ya!';
+        $workloadSeverity = 'low'; // low, medium, high
 
         if ($activeTasksCount > 5) {
             $workloadAdvice = "Beban pekerjaanmu cukup tinggi minggu ini ({$activeTasksCount} tugas aktif). Mungkin waktunya menyelesaikan prioritas utama sebelum mengambil pekerjaan baru.";
-            $workloadSeverity = "high";
+            $workloadSeverity = 'high';
         } elseif ($urgentTasksCount > 1) {
             $workloadAdvice = "Ada {$urgentTasksCount} tugas mendesak (Urgent) yang menunggumu. Jangan ragu untuk mendiskusikan prioritas jika dirasa terlalu menekan.";
-            $workloadSeverity = "high";
+            $workloadSeverity = 'high';
         } elseif ($overdueTasksCount > 0) {
             $workloadAdvice = "Terdapat {$overdueTasksCount} tugas yang melewati deadline. Tarik napas dalam, selesaikan satu per satu, kesehatan mentalmu lebih berharga.";
-            $workloadSeverity = "medium";
+            $workloadSeverity = 'medium';
         }
 
         // 9. Gamification Workspace Data
-        $userPoint = \App\Models\UserPoint::firstOrCreate(
+        $userPoint = UserPoint::firstOrCreate(
             ['user_id' => $userId],
             ['total_points' => 0, 'level' => 1, 'login_streak' => 0]
         );
 
-        $awards = \App\Models\UserAward::where('user_id', $userId)->latest()->get();
+        $awards = UserAward::where('user_id', $userId)->latest()->get();
 
-        $pointLogs = \App\Models\UserPointLog::where('user_id', $userId)
+        $pointLogs = UserPointLog::where('user_id', $userId)
             ->with(['company', 'project'])
             ->latest()
             ->take(15)
             ->get();
 
         // Akumulasi per company
-        $companyPoints = \App\Models\UserPointLog::where('user_id', $userId)
+        $companyPoints = UserPointLog::where('user_id', $userId)
             ->whereNotNull('company_profile_id')
-            ->select('company_profile_id', \Illuminate\Support\Facades\DB::raw('SUM(points) as total'))
+            ->select('company_profile_id', DB::raw('SUM(points) as total'))
             ->groupBy('company_profile_id')
             ->with('company')
             ->get();
 
         // Akumulasi per project
-        $projectPoints = \App\Models\UserPointLog::where('user_id', $userId)
+        $projectPoints = UserPointLog::where('user_id', $userId)
             ->whereNotNull('project_id')
-            ->select('project_id', \Illuminate\Support\Facades\DB::raw('SUM(points) as total'))
+            ->select('project_id', DB::raw('SUM(points) as total'))
             ->groupBy('project_id')
             ->with('project')
             ->get();
 
         // Dynamic AI Work Motivation Analysis based on user stats
-        $workMotivationText = \Illuminate\Support\Facades\Cache::remember("work_motivation_user_" . $userId, 1800, function() use ($completedCount, $totalAssigned, $userPoint, $todayCheckin) {
+        $workMotivationText = Cache::remember('work_motivation_user_'.$userId, 1800, function () use ($completedCount, $totalAssigned, $userPoint, $todayCheckin) {
             try {
-                $aiService = app(\App\Services\AIService::class);
+                $aiService = app(AIService::class);
                 $prompt = "Kamu adalah LUNOU, asisten wellness & produktivitas. Berikan analisis motivasi kerja singkat yang sangat membakar semangat, hangat, dan empati untuk pengguna.\n\n"
-                    . "Data pengguna saat ini:\n"
-                    . "- Tugas selesai: {$completedCount} dari {$totalAssigned} tugas\n"
-                    . "- Level XP: Level {$userPoint->level} ({$userPoint->total_points} XP)\n"
-                    . "- Mood hari ini: " . ($todayCheckin ? $todayCheckin->mood : 'Belum check-in') . "\n\n"
-                    . "Buatlah analisis ringkas (2-3 kalimat) yang mengapresiasi kerja kerasnya, memotivasi dia untuk tetap semangat bekerja hari ini, dan memberikan 1 tips produktivitas kecil. Gunakan Bahasa Indonesia yang ramah dan suportif.";
+                    ."Data pengguna saat ini:\n"
+                    ."- Tugas selesai: {$completedCount} dari {$totalAssigned} tugas\n"
+                    ."- Level XP: Level {$userPoint->level} ({$userPoint->total_points} XP)\n"
+                    .'- Mood hari ini: '.($todayCheckin ? $todayCheckin->mood : 'Belum check-in')."\n\n"
+                    .'Buatlah analisis ringkas (2-3 kalimat) yang mengapresiasi kerja kerasnya, memotivasi dia untuk tetap semangat bekerja hari ini, dan memberikan 1 tips produktivitas kecil. Gunakan Bahasa Indonesia yang ramah dan suportif.';
 
                 $res = $aiService->chat([
                     'system' => 'Asisten motivasi kerja yang membakar semangat.',
                     'message' => $prompt,
-                    'temperature' => 0.8
+                    'temperature' => 0.8,
                 ]);
+
                 return $res->content;
             } catch (\Exception $e) {
-                return "Setiap langkah kecil yang kamu ambil hari ini membawa kemajuan besar untuk proyekmu. Tetap fokus, jaga kesehatan mentalmu, dan mari selesaikan hari ini dengan bangga!";
+                return 'Setiap langkah kecil yang kamu ambil hari ini membawa kemajuan besar untuk proyekmu. Tetap fokus, jaga kesehatan mentalmu, dan mari selesaikan hari ini dengan bangga!';
             }
         });
 
@@ -216,11 +230,11 @@ class DashboardController extends Controller
     {
         $userId = Auth::id();
         $request->validate([
-            'mood'           => ['required', 'string'],
-            'energy'         => ['required', 'integer', 'between:1,5'],
-            'mental_load'    => ['required', 'integer', 'between:1,5'],
+            'mood' => ['required', 'string'],
+            'energy' => ['required', 'integer', 'between:1,5'],
+            'mental_load' => ['required', 'integer', 'between:1,5'],
             'rest_condition' => ['required', 'integer', 'between:1,5'],
-            'thoughts'       => ['nullable', 'string', 'max:2000'],
+            'thoughts' => ['nullable', 'string', 'max:2000'],
         ]);
 
         WellbeingCheckin::updateOrCreate(
@@ -237,19 +251,19 @@ class DashboardController extends Controller
     public function storeJournal(Request $request): RedirectResponse
     {
         $request->validate([
-            'feeling'     => ['nullable', 'string', 'max:5000'],
+            'feeling' => ['nullable', 'string', 'max:5000'],
             'today_event' => ['nullable', 'string', 'max:5000'],
-            'gratitude'   => ['nullable', 'string', 'max:5000'],
-            'let_go'      => ['nullable', 'string', 'max:5000'],
+            'gratitude' => ['nullable', 'string', 'max:5000'],
+            'let_go' => ['nullable', 'string', 'max:5000'],
             'improvement' => ['nullable', 'string', 'max:5000'],
         ]);
 
         WellbeingJournal::create([
-            'user_id'     => Auth::id(),
-            'feeling'     => $request->feeling,
+            'user_id' => Auth::id(),
+            'feeling' => $request->feeling,
             'today_event' => $request->today_event,
-            'gratitude'   => $request->gratitude,
-            'let_go'      => $request->let_go,
+            'gratitude' => $request->gratitude,
+            'let_go' => $request->let_go,
             'improvement' => $request->improvement,
         ]);
 
@@ -262,14 +276,14 @@ class DashboardController extends Controller
     public function storeGoal(Request $request): RedirectResponse
     {
         $request->validate([
-            'title'    => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:Belajar,Membaca,Olahraga,Istirahat,Family time,Personal project'],
         ]);
 
         WellbeingGoal::create([
-            'user_id'      => Auth::id(),
-            'title'        => $request->title,
-            'category'     => $request->category,
+            'user_id' => Auth::id(),
+            'title' => $request->title,
+            'category' => $request->category,
             'is_completed' => false,
         ]);
 
@@ -285,7 +299,7 @@ class DashboardController extends Controller
             abort(403);
         }
 
-        $goal->update(['is_completed' => !$goal->is_completed]);
+        $goal->update(['is_completed' => ! $goal->is_completed]);
 
         return redirect()->back()->with('success', 'Status target pribadi berhasil diperbarui.');
     }
@@ -327,10 +341,10 @@ class DashboardController extends Controller
     public function storeReflection(Request $request): RedirectResponse
     {
         $request->validate([
-            'what_went_well'       => ['nullable', 'string', 'max:5000'],
-            'what_was_exhausting'  => ['nullable', 'string', 'max:5000'],
-            'what_to_change'       => ['nullable', 'string', 'max:5000'],
-            'what_proud_of'        => ['nullable', 'string', 'max:5000'],
+            'what_went_well' => ['nullable', 'string', 'max:5000'],
+            'what_was_exhausting' => ['nullable', 'string', 'max:5000'],
+            'what_to_change' => ['nullable', 'string', 'max:5000'],
+            'what_proud_of' => ['nullable', 'string', 'max:5000'],
         ]);
 
         $userId = Auth::id();
@@ -339,37 +353,38 @@ class DashboardController extends Controller
         WellbeingReflection::updateOrCreate(
             ['user_id' => $userId, 'week_number' => $currentWeekStr],
             [
-                'what_went_well'      => $request->what_went_well,
+                'what_went_well' => $request->what_went_well,
                 'what_was_exhausting' => $request->what_was_exhausting,
-                'what_to_change'      => $request->what_to_change,
-                'what_proud_of'       => $request->what_proud_of,
-                'summary'             => "Minggu ini, hal yang berjalan baik adalah: " . ($request->what_went_well ?? '-') 
-                                         . ". Dan hal yang cukup melelahkan adalah: " . ($request->what_was_exhausting ?? '-') 
-                                         . ". Namun, hal yang dibanggakan: " . ($request->what_proud_of ?? '-') . "."
+                'what_to_change' => $request->what_to_change,
+                'what_proud_of' => $request->what_proud_of,
+                'summary' => 'Minggu ini, hal yang berjalan baik adalah: '.($request->what_went_well ?? '-')
+                                         .'. Dan hal yang cukup melelahkan adalah: '.($request->what_was_exhausting ?? '-')
+                                         .'. Namun, hal yang dibanggakan: '.($request->what_proud_of ?? '-').'.',
             ]
         );
 
         return redirect()->back()->with('success', 'Weekly Reflection berhasil disimpan. Kamu luar biasa minggu ini!');
     }
+
     /**
      * Hitung Laporan Keseimbangan Kerja & Jiwa (AI Balance Report)
      */
     public function balanceReport(Request $request): JsonResponse
     {
         $userId = Auth::id();
-        
+
         // 1. Weekly Stats (7 hari terakhir)
         $sevenDaysAgo = now()->subDays(7)->toDateString();
-        
+
         $checkinsWeek = WellbeingCheckin::where('user_id', $userId)
             ->whereDate('checkin_date', '>=', $sevenDaysAgo)
             ->get();
-            
+
         $completedTasksWeek = ProjectTask::where('assigned_to', $userId)
             ->where('status', 'Completed')
             ->where('updated_at', '>=', now()->subDays(7))
             ->count();
-            
+
         $totalTasksWeek = ProjectTask::where('assigned_to', $userId)
             ->where('updated_at', '>=', now()->subDays(7))
             ->count();
@@ -377,35 +392,35 @@ class DashboardController extends Controller
         $avgEnergyWeek = $checkinsWeek->avg('energy') ?? 3.0;
         $avgMentalWeek = $checkinsWeek->avg('mental_load') ?? 3.0;
         $avgRestWeek = $checkinsWeek->avg('rest_condition') ?? 3.0;
-        
+
         $moodsWeek = $checkinsWeek->pluck('mood')->filter()->toArray();
         $dominantMoodWeek = 'Stabil';
-        if (!empty($moodsWeek)) {
+        if (! empty($moodsWeek)) {
             $moodCounts = array_count_values($moodsWeek);
             arsort($moodCounts);
             $dominantMoodWeek = array_key_first($moodCounts);
         }
 
         // Generate Weekly & Monthly AI Analysis
-        $analysisWeek = "Ritme kehidupan kerjamu terpantau stabil minggu ini. Kamu berhasil mengelola emosi dengan baik selagi menyelesaikan tanggung jawab pekerjaan.";
-        $analysisMonth = "Dalam sebulan terakhir, koordinasi antara beban mental dan produktivitas kerjamu berjalan selaras secara alami.";
+        $analysisWeek = 'Ritme kehidupan kerjamu terpantau stabil minggu ini. Kamu berhasil mengelola emosi dengan baik selagi menyelesaikan tanggung jawab pekerjaan.';
+        $analysisMonth = 'Dalam sebulan terakhir, koordinasi antara beban mental dan produktivitas kerjamu berjalan selaras secara alami.';
         $recommendations = [];
-        $motivation = "Kemajuan kecil yang kamu lakukan hari ini akan berakumulasi menjadi sesuatu yang besar. Hargai ritmemu.";
+        $motivation = 'Kemajuan kecil yang kamu lakukan hari ini akan berakumulasi menjadi sesuatu yang besar. Hargai ritmemu.';
 
         try {
-            $aiService = app(\App\Services\AIService::class);
-            
+            $aiService = app(AIService::class);
+
             // 1. Generate Weekly Analysis
             $weeklyPrompt = "Analisis data kesejahteraan mingguan saya:\n"
-                . "- Tugas Selesai: {$completedTasksWeek} dari {$totalTasksWeek}\n"
-                . "- Rata-rata Energi: " . round($avgEnergyWeek, 1) . "/5.0\n"
-                . "- Beban Mental: " . round($avgMentalWeek, 1) . "/5.0\n"
-                . "- Rata-rata Istirahat: " . round($avgRestWeek, 1) . "/5.0\n"
-                . "- Mood Dominan: {$dominantMoodWeek}\n"
-                . "Berikan 1 paragraf analisis keseimbangan kerja dan emosi yang personal, suportif, dan ringkas (maksimal 2-3 kalimat) dalam bahasa Indonesia.";
-                
+                ."- Tugas Selesai: {$completedTasksWeek} dari {$totalTasksWeek}\n"
+                .'- Rata-rata Energi: '.round($avgEnergyWeek, 1)."/5.0\n"
+                .'- Beban Mental: '.round($avgMentalWeek, 1)."/5.0\n"
+                .'- Rata-rata Istirahat: '.round($avgRestWeek, 1)."/5.0\n"
+                ."- Mood Dominan: {$dominantMoodWeek}\n"
+                .'Berikan 1 paragraf analisis keseimbangan kerja dan emosi yang personal, suportif, dan ringkas (maksimal 2-3 kalimat) dalam bahasa Indonesia.';
+
             $weeklyResponse = $aiService->chat([
-                'system' => "Kamu adalah LUNOU, asisten wellbeing cerdas yang ramah.",
+                'system' => 'Kamu adalah LUNOU, asisten wellbeing cerdas yang ramah.',
                 'message' => $weeklyPrompt,
                 'temperature' => 0.7,
             ]);
@@ -417,12 +432,12 @@ class DashboardController extends Controller
             $checkinsMonth = WellbeingCheckin::where('user_id', $userId)
                 ->whereDate('checkin_date', '>=', $thirtyDaysAgo)
                 ->get();
-                
+
             $completedTasksMonth = ProjectTask::where('assigned_to', $userId)
                 ->where('status', 'Completed')
                 ->where('updated_at', '>=', now()->subDays(30))
                 ->count();
-                
+
             $totalTasksMonth = ProjectTask::where('assigned_to', $userId)
                 ->where('updated_at', '>=', now()->subDays(30))
                 ->count();
@@ -430,63 +445,63 @@ class DashboardController extends Controller
             $avgEnergyMonth = $checkinsMonth->avg('energy') ?? 3.0;
             $avgMentalMonth = $checkinsMonth->avg('mental_load') ?? 3.0;
             $avgRestMonth = $checkinsMonth->avg('rest_condition') ?? 3.0;
-            
+
             $moodsMonth = $checkinsMonth->pluck('mood')->filter()->toArray();
             $dominantMoodMonth = 'Stabil';
-            if (!empty($moodsMonth)) {
+            if (! empty($moodsMonth)) {
                 $moodCounts = array_count_values($moodsMonth);
                 arsort($moodCounts);
                 $dominantMoodMonth = array_key_first($moodCounts);
             }
 
             $monthlyPrompt = "Analisis data kesejahteraan bulanan (30 hari terakhir) saya:\n"
-                . "- Tugas Selesai: {$completedTasksMonth} dari {$totalTasksMonth}\n"
-                . "- Rata-rata Energi: " . round($avgEnergyMonth, 1) . "/5.0\n"
-                . "- Beban Mental: " . round($avgMentalMonth, 1) . "/5.0\n"
-                . "- Rata-rata Istirahat: " . round($avgRestMonth, 1) . "/5.0\n"
-                . "- Mood Dominan: {$dominantMoodMonth}\n"
-                . "Berikan 1 paragraf analisis keseimbangan bulanan yang personal, suportif, dan ringkas (maksimal 2-3 kalimat) dalam bahasa Indonesia.";
-                
+                ."- Tugas Selesai: {$completedTasksMonth} dari {$totalTasksMonth}\n"
+                .'- Rata-rata Energi: '.round($avgEnergyMonth, 1)."/5.0\n"
+                .'- Beban Mental: '.round($avgMentalMonth, 1)."/5.0\n"
+                .'- Rata-rata Istirahat: '.round($avgRestMonth, 1)."/5.0\n"
+                ."- Mood Dominan: {$dominantMoodMonth}\n"
+                .'Berikan 1 paragraf analisis keseimbangan bulanan yang personal, suportif, dan ringkas (maksimal 2-3 kalimat) dalam bahasa Indonesia.';
+
             $monthlyResponse = $aiService->chat([
-                'system' => "Kamu adalah LUNOU, asisten wellbeing cerdas yang ramah.",
+                'system' => 'Kamu adalah LUNOU, asisten wellbeing cerdas yang ramah.',
                 'message' => $monthlyPrompt,
                 'temperature' => 0.7,
             ]);
             $analysisMonth = trim($monthlyResponse->content);
 
             // 3. Generate Recommendations
-            $recPrompt = "Berdasarkan data di atas (Energi: " . round($avgEnergyWeek, 1) . ", Mental Load: " . round($avgMentalWeek, 1) . ", Istirahat: " . round($avgRestWeek, 1) . "),\n"
-                . "Berikan 3 poin rekomendasi tindakan pemulihan yang spesifik dan praktis dalam bahasa Indonesia. Tuliskan langsung sebagai daftar poin teks polos dipisah tanda baris baru (newline) tanpa format markdown (seperti - atau * atau angka).";
-                
+            $recPrompt = 'Berdasarkan data di atas (Energi: '.round($avgEnergyWeek, 1).', Mental Load: '.round($avgMentalWeek, 1).', Istirahat: '.round($avgRestWeek, 1)."),\n"
+                .'Berikan 3 poin rekomendasi tindakan pemulihan yang spesifik dan praktis dalam bahasa Indonesia. Tuliskan langsung sebagai daftar poin teks polos dipisah tanda baris baru (newline) tanpa format markdown (seperti - atau * atau angka).';
+
             $recResponse = $aiService->chat([
-                'system' => "Kamu adalah asisten psikolog wellbeing yang ahli.",
+                'system' => 'Kamu adalah asisten psikolog wellbeing yang ahli.',
                 'message' => $recPrompt,
                 'temperature' => 0.5,
             ]);
-            
+
             $lines = explode("\n", $recResponse->content);
             foreach ($lines as $line) {
                 $line = trim(preg_replace('/^\s*[-*•\d\.]+\s+/', '', $line));
-                if (!empty($line)) {
+                if (! empty($line)) {
                     $recommendations[] = $line;
                 }
             }
 
             // 4. Generate Motivation Quote
-            $motPrompt = "Berikan 1 kalimat kutipan motivasi yang mendalam dan relevan dengan kesehatan mental dan keseimbangan hidup.";
+            $motPrompt = 'Berikan 1 kalimat kutipan motivasi yang mendalam dan relevan dengan kesehatan mental dan keseimbangan hidup.';
             $motResponse = $aiService->chat([
-                'system' => "Kamu adalah motivator wellbeing yang bijak.",
+                'system' => 'Kamu adalah motivator wellbeing yang bijak.',
                 'message' => $motPrompt,
                 'temperature' => 0.8,
             ]);
             $motivation = trim($motResponse->content, ' "');
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::warning("AI Wellbeing Report generator fallback triggered: " . $e->getMessage());
-            
+            Log::warning('AI Wellbeing Report generator fallback triggered: '.$e->getMessage());
+
             // Fallback static jika AI gagal
             if ($avgEnergyWeek < 3.0 && $completedTasksWeek >= 2) {
-                $analysisWeek = "LUNOU mendeteksi penyusutan energi. Kamu bekerja keras menyelesaikan {$completedTasksWeek} tugas minggu ini, namun baterai energimu menipis di angka " . round($avgEnergyWeek, 1) . "/5. LUNOU menyarankan ambil jeda relaksasi penuh malam ini.";
+                $analysisWeek = "LUNOU mendeteksi penyusutan energi. Kamu bekerja keras menyelesaikan {$completedTasksWeek} tugas minggu ini, namun baterai energimu menipis di angka ".round($avgEnergyWeek, 1).'/5. LUNOU menyarankan ambil jeda relaksasi penuh malam ini.';
             }
 
             // Fetch monthly checkins for static fallback
@@ -494,7 +509,7 @@ class DashboardController extends Controller
             $checkinsMonth = WellbeingCheckin::where('user_id', $userId)
                 ->whereDate('checkin_date', '>=', $thirtyDaysAgo)
                 ->get();
-                
+
             $completedTasksMonth = ProjectTask::where('assigned_to', $userId)
                 ->where('status', 'Completed')
                 ->where('updated_at', '>=', now()->subDays(30))
@@ -502,21 +517,21 @@ class DashboardController extends Controller
 
             $avgEnergyMonth = $checkinsMonth->avg('energy') ?? 3.0;
             $avgMentalMonth = $checkinsMonth->avg('mental_load') ?? 3.0;
-            
+
             $moodsMonth = $checkinsMonth->pluck('mood')->filter()->toArray();
             $dominantMoodMonth = 'Stabil';
-            if (!empty($moodsMonth)) {
+            if (! empty($moodsMonth)) {
                 $moodCounts = array_count_values($moodsMonth);
                 arsort($moodCounts);
                 $dominantMoodMonth = array_key_first($moodCounts);
             }
 
             if ($avgEnergyMonth < 3.0 && $completedTasksMonth >= 5) {
-                $analysisMonth = "Evaluasi Bulanan: Beban kerja kumulatifmu sangat tinggi ({$completedTasksMonth} tugas selesai), tetapi tingkat pemulihan energimu rendah (" . round($avgEnergyMonth, 1) . "/5). Waspada gejala burnout kronis.";
+                $analysisMonth = "Evaluasi Bulanan: Beban kerja kumulatifmu sangat tinggi ({$completedTasksMonth} tugas selesai), tetapi tingkat pemulihan energimu rendah (".round($avgEnergyMonth, 1).'/5). Waspada gejala burnout kronis.';
             }
 
             if (empty($recommendations)) {
-                $recommendations[] = "Ambil jeda 5-10 menit setiap 2 jam kerja untuk meluruskan pundak dan minum air putih hangat.";
+                $recommendations[] = 'Ambil jeda 5-10 menit setiap 2 jam kerja untuk meluruskan pundak dan minum air putih hangat.';
                 $recommendations[] = "Gunakan fitur 'Leave It Here' sebelum pulang. Matikan laptop kantor malam ini.";
             }
         }
@@ -541,7 +556,7 @@ class DashboardController extends Controller
                 'analysis' => $analysisMonth,
             ],
             'recommendations' => $recommendations,
-            'motivation' => $motivation
+            'motivation' => $motivation,
         ]);
     }
 
@@ -562,12 +577,12 @@ class DashboardController extends Controller
         $checkins = WellbeingCheckin::where('user_id', $userId)
             ->whereDate('checkin_date', '>=', $sevenDaysAgo)
             ->get();
-            
+
         $completedTasks = ProjectTask::where('assigned_to', $userId)
             ->where('status', 'Completed')
             ->where('updated_at', '>=', now()->subDays(7))
             ->count();
-            
+
         $totalTasks = ProjectTask::where('assigned_to', $userId)
             ->where('updated_at', '>=', now()->subDays(7))
             ->count();
@@ -575,29 +590,29 @@ class DashboardController extends Controller
         $avgEnergy = $checkins->avg('energy') ?? 3.0;
         $avgMental = $checkins->avg('mental_load') ?? 3.0;
         $avgRest = $checkins->avg('rest_condition') ?? 3.0;
-        
+
         $moods = $checkins->pluck('mood')->filter()->toArray();
         $dominantMood = 'Stabil';
-        if (!empty($moods)) {
+        if (! empty($moods)) {
             $moodCounts = array_count_values($moods);
             arsort($moodCounts);
             $dominantMood = array_key_first($moodCounts);
         }
 
         try {
-            $aiService = app(\App\Services\AIService::class);
+            $aiService = app(AIService::class);
 
-            $systemPrompt = "Kamu adalah LUNOU, asisten psikolog & wellness coach pribadi yang hangat, berempati, dan solutif di Yoimo Ecosystem. "
-                . "Kamu sedang melayani diskusi/konseling interaktif tentang kesejahteraan mental dengan pengguna: {$user->name}. "
-                . "Berikut adalah metrik wellbeing 7 hari terakhir miliknya:\n"
-                . "- Rata-rata Energi: " . round($avgEnergy, 1) . "/5.0\n"
-                . "- Beban Mental: " . round($avgMental, 1) . "/5.0\n"
-                . "- Istirahat/Tidur: " . round($avgRest, 1) . "/5.0\n"
-                . "- Mood Dominan: {$dominantMood}\n"
-                . "- Tugas Proyek Selesai: {$completedTasks} dari {$totalTasks} tugas\n\n"
-                . "Jawab pertanyaan pengguna dengan nada bicara yang ramah, hangat, penuh perhatian, dan mendengarkan secara aktif. "
-                . "Beri saran praktis, sehat, dan menenangkan. Gunakan bahasa Indonesia yang santai tapi sopan. "
-                . "Buat respon berkisar 2-4 kalimat agar mudah dibaca di widget chat.";
+            $systemPrompt = 'Kamu adalah LUNOU, asisten psikolog & wellness coach pribadi yang hangat, berempati, dan solutif di Yoimo Ecosystem. '
+                ."Kamu sedang melayani diskusi/konseling interaktif tentang kesejahteraan mental dengan pengguna: {$user->name}. "
+                ."Berikut adalah metrik wellbeing 7 hari terakhir miliknya:\n"
+                .'- Rata-rata Energi: '.round($avgEnergy, 1)."/5.0\n"
+                .'- Beban Mental: '.round($avgMental, 1)."/5.0\n"
+                .'- Istirahat/Tidur: '.round($avgRest, 1)."/5.0\n"
+                ."- Mood Dominan: {$dominantMood}\n"
+                ."- Tugas Proyek Selesai: {$completedTasks} dari {$totalTasks} tugas\n\n"
+                .'Jawab pertanyaan pengguna dengan nada bicara yang ramah, hangat, penuh perhatian, dan mendengarkan secara aktif. '
+                .'Beri saran praktis, sehat, dan menenangkan. Gunakan bahasa Indonesia yang santai tapi sopan. '
+                .'Buat respon berkisar 2-4 kalimat agar mudah dibaca di widget chat.';
 
             $aiResponse = $aiService->chat([
                 'system' => $systemPrompt,
@@ -612,7 +627,7 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'LUNOU sedang kesulitan menghubungkan pikiran: ' . $e->getMessage(),
+                'message' => 'LUNOU sedang kesulitan menghubungkan pikiran: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -627,17 +642,17 @@ class DashboardController extends Controller
         ]);
 
         try {
-            $aiService = app(\App\Services\AIService::class);
+            $aiService = app(AIService::class);
 
             $systemPrompt = "Tugasmu adalah menganalisis pesan kondisi fisik/mental pengguna hari ini dan memetakan datanya secara akurat ke dalam format JSON.\n\n"
-                . "Pilihan mood yang valid hanya: 'Senang', 'Stabil', 'Cemas', 'Lelah', 'Stres'. Pilih salah satu yang paling mendekati deskripsi pengguna.\n"
-                . "Skala slider yang digunakan adalah 1 sampai 5:\n"
-                . "- energy (Level Energi: 1=Habis/Lemas, 3=Normal/Cukup, 5=Penuh/Segar)\n"
-                . "- mental_load (Beban Pikiran: 1=Rendah/Tenang, 3=Sedang, 5=Berat/Penuh Pikiran)\n"
-                . "- rest_condition (Kualitas Istirahat: 1=Kurang/Begadang, 3=Cukup, 5=Sangat Baik/Segar)\n\n"
-                . "Ekstrak juga ringkasan pikiran pengguna ke bidang 'thoughts' (maksimal 200 karakter).\n\n"
-                . "Kamu HARUS merespon HANYA dengan dokumen JSON mentah tanpa format markdown (jangan pakai ```json atau blok kode lainnya). Contoh output:\n"
-                . "{\"mood\": \"Senang\", \"energy\": 4, \"mental_load\": 2, \"rest_condition\": 5, \"thoughts\": \"Hari ini merasa sangat produktif dan tidur nyenyak.\"}";
+                ."Pilihan mood yang valid hanya: 'Senang', 'Stabil', 'Cemas', 'Lelah', 'Stres'. Pilih salah satu yang paling mendekati deskripsi pengguna.\n"
+                ."Skala slider yang digunakan adalah 1 sampai 5:\n"
+                ."- energy (Level Energi: 1=Habis/Lemas, 3=Normal/Cukup, 5=Penuh/Segar)\n"
+                ."- mental_load (Beban Pikiran: 1=Rendah/Tenang, 3=Sedang, 5=Berat/Penuh Pikiran)\n"
+                ."- rest_condition (Kualitas Istirahat: 1=Kurang/Begadang, 3=Cukup, 5=Sangat Baik/Segar)\n\n"
+                ."Ekstrak juga ringkasan pikiran pengguna ke bidang 'thoughts' (maksimal 200 karakter).\n\n"
+                ."Kamu HARUS merespon HANYA dengan dokumen JSON mentah tanpa format markdown (jangan pakai ```json atau blok kode lainnya). Contoh output:\n"
+                .'{"mood": "Senang", "energy": 4, "mental_load": 2, "rest_condition": 5, "thoughts": "Hari ini merasa sangat produktif dan tidur nyenyak."}';
 
             $aiResponse = $aiService->chat([
                 'system' => $systemPrompt,
@@ -647,7 +662,7 @@ class DashboardController extends Controller
 
             // Decode response
             $cleanContent = trim($aiResponse->content);
-            
+
             // Remove markdown code blocks if any (in case LLM ignored prompt instructions)
             if (str_starts_with($cleanContent, '```')) {
                 $cleanContent = preg_replace('/^```(?:json)?|```$/m', '', $cleanContent);
@@ -657,7 +672,7 @@ class DashboardController extends Controller
             $data = json_decode($cleanContent, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception("Gagal melakukan parsing JSON dari respon AI: " . $cleanContent);
+                throw new \Exception('Gagal melakukan parsing JSON dari respon AI: '.$cleanContent);
             }
 
             return response()->json(array_merge([
@@ -667,7 +682,7 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'LUNOU gagal menganalisis pesan Anda: ' . $e->getMessage(),
+                'message' => 'LUNOU gagal menganalisis pesan Anda: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -682,42 +697,42 @@ class DashboardController extends Controller
         ]);
 
         try {
-            $aiService = app(\App\Services\AIService::class);
+            $aiService = app(AIService::class);
 
             $systemPrompt = "Kamu adalah LUNOU, asisten wellness Yoimo yang ahli menganalisis jurnal harian bebas pengguna.\n"
-                . "Analisis cerita/pengalaman harian dari pengguna dan petakan datanya ke dalam objek JSON dengan skema berikut:\n\n"
-                . "{\n"
-                . "  \"checkin\": {\n"
-                . "    \"mood\": \"Senang\" | \"Stabil\" | \"Cemas\" | \"Lelah\" | \"Stres\" (pilih salah satu mood paling mendekati),\n"
-                . "    \"energy\": 1..5 (skala energi: 1=habis, 3=normal, 5=penuh),\n"
-                . "    \"mental_load\": 1..5 (skala beban pikiran: 1=tenang, 3=sedang, 5=berat),\n"
-                . "    \"rest_condition\": 1..5 (skala istirahat: 1=kurang tidur/begadang, 3=cukup, 5=sangat baik),\n"
-                . "    \"thoughts\": \"Ringkasan pikiran/perasaan hari ini (maks 200 karakter)\"\n"
-                . "  },\n"
-                . "  \"journal\": {\n"
-                . "    \"feeling\": \"Deskripsi perasaan hari ini\",\n"
-                . "    \"today_event\": \"Kejadian/aktivitas penting hari ini\",\n"
-                . "    \"gratitude\": \"Hal yang disyukuri hari ini (jika ada, jika tidak tulis kosong)\",\n"
-                . "    \"let_go\": \"Hal melelahkan yang ingin dilepaskan (jika ada, jika tidak tulis kosong)\",\n"
-                . "    \"improvement\": \"Hal yang ingin ditingkatkan esok hari (jika ada, jika tidak tulis kosong)\"\n"
-                . "  },\n"
-                . "  \"goals\": [\n"
-                . "    {\n"
-                . "      \"title\": \"Judul target/rencana yang ingin dicapai ke depan\",\n"
-                . "      \"category\": \"Belajar\" | \"Membaca\" | \"Olahraga\" | \"Istirahat\" | \"Family time\" | \"Personal project\"\n"
-                . "    }\n"
-                . "  ] (ekstrak maksimal 3 target baru jika disebutkan, jika tidak ada kirim array kosong),\n"
-                . "  \"reflection\": {\n"
-                . "    \"what_went_well\": \"Hal yang berjalan dengan baik minggu/hari ini\",\n"
-                . "    \"what_was_exhausting\": \"Hal yang melelahkan minggu/hari ini\",\n"
-                . "    \"what_to_change\": \"Hal yang ingin diubah agar lebih baik\",\n"
-                . "    \"what_proud_of\": \"Pencapaian yang dibanggakan\"\n"
-                . "  },\n"
-                . "  \"categories\": [\"Pekerjaan\" | \"Kesehatan\" | \"Hubungan\" | \"Pribadi\" | \"Keluarga\" | \"Lainnya\"] (pilih minimal 1, maksimal 3 kategori catatan harian yang relevan),\n"
-                . "  \"analysis\": \"1-2 kalimat analisis psikologis/kondisi wellbeing pengguna secara empati dan bersahabat\",\n"
-                . "  \"appreciation\": \"1 kalimat apresiasi hangat dan dorongan semangat atas apa yang dicapai/dilalui pengguna hari ini\"\n"
-                . "}\n\n"
-                . "Kamu HARUS merespon HANYA dengan dokumen JSON mentah tanpa format markdown (jangan pakai ```json atau blok kode lainnya).";
+                ."Analisis cerita/pengalaman harian dari pengguna dan petakan datanya ke dalam objek JSON dengan skema berikut:\n\n"
+                ."{\n"
+                ."  \"checkin\": {\n"
+                ."    \"mood\": \"Senang\" | \"Stabil\" | \"Cemas\" | \"Lelah\" | \"Stres\" (pilih salah satu mood paling mendekati),\n"
+                ."    \"energy\": 1..5 (skala energi: 1=habis, 3=normal, 5=penuh),\n"
+                ."    \"mental_load\": 1..5 (skala beban pikiran: 1=tenang, 3=sedang, 5=berat),\n"
+                ."    \"rest_condition\": 1..5 (skala istirahat: 1=kurang tidur/begadang, 3=cukup, 5=sangat baik),\n"
+                ."    \"thoughts\": \"Ringkasan pikiran/perasaan hari ini (maks 200 karakter)\"\n"
+                ."  },\n"
+                ."  \"journal\": {\n"
+                ."    \"feeling\": \"Deskripsi perasaan hari ini\",\n"
+                ."    \"today_event\": \"Kejadian/aktivitas penting hari ini\",\n"
+                ."    \"gratitude\": \"Hal yang disyukuri hari ini (jika ada, jika tidak tulis kosong)\",\n"
+                ."    \"let_go\": \"Hal melelahkan yang ingin dilepaskan (jika ada, jika tidak tulis kosong)\",\n"
+                ."    \"improvement\": \"Hal yang ingin ditingkatkan esok hari (jika ada, jika tidak tulis kosong)\"\n"
+                ."  },\n"
+                ."  \"goals\": [\n"
+                ."    {\n"
+                ."      \"title\": \"Judul target/rencana yang ingin dicapai ke depan\",\n"
+                ."      \"category\": \"Belajar\" | \"Membaca\" | \"Olahraga\" | \"Istirahat\" | \"Family time\" | \"Personal project\"\n"
+                ."    }\n"
+                ."  ] (ekstrak maksimal 3 target baru jika disebutkan, jika tidak ada kirim array kosong),\n"
+                ."  \"reflection\": {\n"
+                ."    \"what_went_well\": \"Hal yang berjalan dengan baik minggu/hari ini\",\n"
+                ."    \"what_was_exhausting\": \"Hal yang melelahkan minggu/hari ini\",\n"
+                ."    \"what_to_change\": \"Hal yang ingin diubah agar lebih baik\",\n"
+                ."    \"what_proud_of\": \"Pencapaian yang dibanggakan\"\n"
+                ."  },\n"
+                ."  \"categories\": [\"Pekerjaan\" | \"Kesehatan\" | \"Hubungan\" | \"Pribadi\" | \"Keluarga\" | \"Lainnya\"] (pilih minimal 1, maksimal 3 kategori catatan harian yang relevan),\n"
+                ."  \"analysis\": \"1-2 kalimat analisis psikologis/kondisi wellbeing pengguna secara empati dan bersahabat\",\n"
+                ."  \"appreciation\": \"1 kalimat apresiasi hangat dan dorongan semangat atas apa yang dicapai/dilalui pengguna hari ini\"\n"
+                ."}\n\n"
+                .'Kamu HARUS merespon HANYA dengan dokumen JSON mentah tanpa format markdown (jangan pakai ```json atau blok kode lainnya).';
 
             $aiResponse = $aiService->chat([
                 'system' => $systemPrompt,
@@ -727,7 +742,7 @@ class DashboardController extends Controller
 
             // Decode response
             $cleanContent = trim($aiResponse->content);
-            
+
             // Remove markdown code blocks if any
             if (str_starts_with($cleanContent, '```')) {
                 $cleanContent = preg_replace('/^```(?:json)?|```$/m', '', $cleanContent);
@@ -737,7 +752,7 @@ class DashboardController extends Controller
             $data = json_decode($cleanContent, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception("Gagal melakukan parsing JSON dari respon AI: " . $cleanContent);
+                throw new \Exception('Gagal melakukan parsing JSON dari respon AI: '.$cleanContent);
             }
 
             $userId = Auth::id();
@@ -745,7 +760,7 @@ class DashboardController extends Controller
 
             // 1. Simpan/Update Daily Check-in
             $checkinData = $data['checkin'] ?? [];
-            if (!empty($checkinData)) {
+            if (! empty($checkinData)) {
                 WellbeingCheckin::updateOrCreate(
                     ['user_id' => $userId, 'checkin_date' => now()->toDateString()],
                     array_intersect_key($checkinData, array_flip(['mood', 'energy', 'mental_load', 'rest_condition', 'thoughts']))
@@ -754,7 +769,7 @@ class DashboardController extends Controller
 
             // 2. Simpan Jurnal Refleksi Baru
             $journalData = $data['journal'] ?? [];
-            if (!empty($journalData) && (!empty($journalData['feeling']) || !empty($journalData['today_event']))) {
+            if (! empty($journalData) && (! empty($journalData['feeling']) || ! empty($journalData['today_event']))) {
                 WellbeingJournal::create([
                     'user_id' => $userId,
                     'raw_content' => $request->message,
@@ -773,7 +788,7 @@ class DashboardController extends Controller
             $goalsData = $data['goals'] ?? [];
             $savedGoalsList = [];
             foreach ($goalsData as $goal) {
-                if (!empty($goal['title']) && !empty($goal['category'])) {
+                if (! empty($goal['title']) && ! empty($goal['category'])) {
                     WellbeingGoal::create([
                         'user_id' => $userId,
                         'title' => $goal['title'],
@@ -786,10 +801,10 @@ class DashboardController extends Controller
 
             // 4. Simpan/Update Refleksi Mingguan
             $reflectionData = $data['reflection'] ?? [];
-            if (!empty($reflectionData) && (!empty($reflectionData['what_went_well']) || !empty($reflectionData['what_proud_of']))) {
-                $summary = "Minggu ini, hal yang berjalan baik adalah: " . ($reflectionData['what_went_well'] ?? '-') 
-                         . ". Dan hal yang cukup melelahkan adalah: " . ($reflectionData['what_was_exhausting'] ?? '-') 
-                         . ". Namun, hal yang dibanggakan: " . ($reflectionData['what_proud_of'] ?? '-') . ".";
+            if (! empty($reflectionData) && (! empty($reflectionData['what_went_well']) || ! empty($reflectionData['what_proud_of']))) {
+                $summary = 'Minggu ini, hal yang berjalan baik adalah: '.($reflectionData['what_went_well'] ?? '-')
+                         .'. Dan hal yang cukup melelahkan adalah: '.($reflectionData['what_was_exhausting'] ?? '-')
+                         .'. Namun, hal yang dibanggakan: '.($reflectionData['what_proud_of'] ?? '-').'.';
 
                 WellbeingReflection::updateOrCreate(
                     ['user_id' => $userId, 'week_number' => $currentWeekStr],
@@ -801,24 +816,24 @@ class DashboardController extends Controller
 
             return response()->json([
                 'success' => true,
-                'checkin' => "Mood: " . ($checkinData['mood'] ?? 'Stabil') . ", Energi: " . ($checkinData['energy'] ?? '3') . "/5, Istirahat: " . ($checkinData['rest_condition'] ?? '3') . "/5",
+                'checkin' => 'Mood: '.($checkinData['mood'] ?? 'Stabil').', Energi: '.($checkinData['energy'] ?? '3').'/5, Istirahat: '.($checkinData['rest_condition'] ?? '3').'/5',
                 'checkin_data' => $checkinData,
-                'journal' => "Jurnal harian tersimpan aman.",
-                'goals' => !empty($savedGoalsList) ? $savedGoalsList : ["Tidak ada target baru yang terdeteksi"],
-                'reflection' => "Refleksi Mingguan berhasil diupdate.",
+                'journal' => 'Jurnal harian tersimpan aman.',
+                'goals' => ! empty($savedGoalsList) ? $savedGoalsList : ['Tidak ada target baru yang terdeteksi'],
+                'reflection' => 'Refleksi Mingguan berhasil diupdate.',
                 'new_entry' => [
                     'date' => now()->isoFormat('dddd, D MMMM Y - HH:mm'),
                     'raw_content' => $request->message,
                     'analysis' => $data['analysis'] ?? null,
                     'appreciation' => $data['appreciation'] ?? null,
                     'categories' => $data['categories'] ?? ['Pribadi'],
-                ]
+                ],
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memproses Auto-Journaler: ' . $e->getMessage(),
+                'message' => 'Gagal memproses Auto-Journaler: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -838,7 +853,7 @@ class DashboardController extends Controller
         $description = $request->input('description');
 
         try {
-            $userPoint = \App\Services\GamificationService::addPoints(
+            $userPoint = GamificationService::addPoints(
                 $userId,
                 $points,
                 'Game Ketenangan',
@@ -852,12 +867,12 @@ class DashboardController extends Controller
                 'success' => true,
                 'total_points' => $userPoint->total_points,
                 'level' => $userPoint->level,
-                'message' => 'Poin berhasil dicatat di database!'
+                'message' => 'Poin berhasil dicatat di database!',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mencatat poin: ' . $e->getMessage()
+                'message' => 'Gagal mencatat poin: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -868,23 +883,23 @@ class DashboardController extends Controller
     public function generateLogicQuiz(Request $request): JsonResponse
     {
         try {
-            $aiService = app(\App\Services\AIService::class);
-            $systemPrompt = "Anda adalah LUNOU, asisten asah otak untuk pemulihan mental dan fokus kerja. "
-                . "Buatlah satu soal teka-teki logika atau tebak-tebakan logika yang menarik, tidak terlalu panjang, dan menantang logika berpikir.\n\n"
-                . "Soal dan pilihan jawaban HARUS dalam Bahasa Indonesia yang bersih, ramah, dan BEBAS DARI SEGALA EMOTIKON/EMOJI.\n\n"
-                . "Respon Anda HARUS berupa JSON murni dengan format:\n"
-                . "{\n"
-                . "  \"question\": \"Teks pertanyaan teka-teki logika...\",\n"
-                . "  \"options\": [\"Pilihan A\", \"Pilihan B\", \"Pilihan C\", \"Pilihan D\"],\n"
-                . "  \"answerIndex\": 0,\n"
-                . "  \"explanation\": \"Penjelasan singkat mengapa jawaban tersebut benar...\"\n"
-                . "}\n"
-                . "Jangan berikan format markdown atau pembungkus kode.";
+            $aiService = app(AIService::class);
+            $systemPrompt = 'Anda adalah LUNOU, asisten asah otak untuk pemulihan mental dan fokus kerja. '
+                ."Buatlah satu soal teka-teki logika atau tebak-tebakan logika yang menarik, tidak terlalu panjang, dan menantang logika berpikir.\n\n"
+                ."Soal dan pilihan jawaban HARUS dalam Bahasa Indonesia yang bersih, ramah, dan BEBAS DARI SEGALA EMOTIKON/EMOJI.\n\n"
+                ."Respon Anda HARUS berupa JSON murni dengan format:\n"
+                ."{\n"
+                ."  \"question\": \"Teks pertanyaan teka-teki logika...\",\n"
+                ."  \"options\": [\"Pilihan A\", \"Pilihan B\", \"Pilihan C\", \"Pilihan D\"],\n"
+                ."  \"answerIndex\": 0,\n"
+                ."  \"explanation\": \"Penjelasan singkat mengapa jawaban tersebut benar...\"\n"
+                ."}\n"
+                .'Jangan berikan format markdown atau pembungkus kode.';
 
             $res = $aiService->chat([
-                'system' => "Anda adalah pembuat soal teka-teki logika IT professional yang ramah dan bebas emoji.",
+                'system' => 'Anda adalah pembuat soal teka-teki logika IT professional yang ramah dan bebas emoji.',
                 'message' => $systemPrompt,
-                'temperature' => 0.7
+                'temperature' => 0.7,
             ]);
 
             $cleanJson = trim($res->content);
@@ -894,18 +909,18 @@ class DashboardController extends Controller
             $cleanJson = trim($cleanJson);
 
             $quiz = json_decode($cleanJson, true);
-            if (json_last_error() !== JSON_ERROR_NONE || !is_array($quiz)) {
-                throw new \Exception("Invalid JSON format from AI response: " . $res->content);
+            if (json_last_error() !== JSON_ERROR_NONE || ! is_array($quiz)) {
+                throw new \Exception('Invalid JSON format from AI response: '.$res->content);
             }
 
             return response()->json([
                 'success' => true,
-                'quiz' => $quiz
+                'quiz' => $quiz,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal merancang kuis logika: ' . $e->getMessage()
+                'message' => 'Gagal merancang kuis logika: '.$e->getMessage(),
             ], 500);
         }
     }

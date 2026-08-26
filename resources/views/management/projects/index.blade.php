@@ -78,6 +78,18 @@
         </div>
     </div>
 
+    <!-- Project List Filter Tabs -->
+    <div class="flex items-center gap-2 pb-1">
+        <a href="{{ route('management.projects.index') }}" 
+           class="px-4 py-2 text-xs font-black rounded-xl transition-all {{ !$isArchived ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold' }}">
+            Project Aktif ({{ $activeCount }})
+        </a>
+        <a href="{{ route('management.projects.index', ['filter' => 'archived']) }}" 
+           class="px-4 py-2 text-xs font-black rounded-xl transition-all {{ $isArchived ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold' }}">
+            Diarsipkan ({{ $archivedCount }})
+        </a>
+    </div>
+
     <!-- Table Card -->
     <div class="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
@@ -149,6 +161,22 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                         </svg>
                                     </a>
+                                    <form method="POST" action="{{ route('management.projects.toggle-archive', $p->id) }}">
+                                        @csrf
+                                        <button type="submit" class="p-2 text-slate-500 {{ $p->is_archived ? 'hover:text-emerald-600 hover:bg-emerald-50' : 'hover:text-amber-600 hover:bg-amber-50' }} rounded-xl transition-all" title="{{ $p->is_archived ? 'Aktifkan Kembali Project' : 'Arsipkan Project' }}">
+                                            @if($p->is_archived)
+                                                <!-- Icon Restore / Arrow Up -->
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                                </svg>
+                                            @else
+                                                <!-- Icon Archive / Box -->
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                                                </svg>
+                                            @endif
+                                        </button>
+                                    </form>
                                     <form method="POST" action="{{ route('management.projects.destroy', $p->id) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus project ini?')">
                                         @csrf
                                         @method('DELETE')

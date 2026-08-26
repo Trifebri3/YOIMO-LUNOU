@@ -14,6 +14,7 @@ use App\Http\Controllers\Management\LocalAIController;
 use App\Http\Controllers\Management\ProjectController as ManagementProjectController;
 use App\Http\Controllers\Management\RoadmapController as ManagementRoadmapController;
 use App\Http\Controllers\Management\TaskController as ManagementTaskController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicAwardController;
 use App\Http\Controllers\PublicCompanyController;
@@ -239,9 +240,11 @@ Route::middleware(['auth', 'verified', 'role:management,superadmin'])
 
         // Main Project Resource
         Route::resource('projects', ManagementProjectController::class);
+        Route::post('/projects/{project}/toggle-archive', [ManagementProjectController::class, 'toggleArchive'])->name('projects.toggle-archive');
         Route::post('/ai-generate', [LocalAIController::class, 'generate'])->name('ai-generate');
         // Rute Klaim Tugas Terbuka (Claim Task)
         Route::post('/projects/{project}/tasks/{task}/claim', [ManagementTaskController::class, 'claim'])->name('projects.tasks.claim');
+        Route::post('/projects/{project}/tasks/{task}/assign', [ManagementTaskController::class, 'assign'])->name('projects.tasks.assign');
 
         // Di dalam Route::prefix('management')->group(...)
         Route::patch('/projects/{project}/expenses/toggle-transparency', [ManagementExpenseController::class, 'toggleTransparency'])->name('projects.expenses.toggle-transparency');
@@ -269,9 +272,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
     Route::get('/chat/fetch', [ChatController::class, 'fetchMessages'])->name('chat.fetch');
+    Route::post('/chat/toggle-archive', [ChatController::class, 'toggleArchive'])->name('chat.toggle-archive');
 
     // Floating Mascot AI Chatbot Companion
     Route::post('/chatbot/query', [ChatbotController::class, 'query'])->name('chatbot.query');
+
+    // Notification Routes
+    Route::get('/notifications/unread', [NotificationController::class, 'getUnread'])->name('notifications.unread');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 });
 
 // Import statements moved to the top of the file

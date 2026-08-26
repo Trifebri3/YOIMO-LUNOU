@@ -53,6 +53,23 @@
                     Project Group
                 </button>
             </div>
+            @if($showArchived)
+                <div class="mt-2 flex items-center justify-between bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2 text-xs font-bold text-indigo-800">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        <span>Arsip Chat</span>
+                    </div>
+                    <a href="{{ route('chat.index') }}" class="text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-800 tracking-wider">Semua Chat</a>
+                </div>
+            @elseif($archivedChatsCount > 0)
+                <a href="{{ route('chat.index', ['filter' => 'archived']) }}" class="mt-2 flex items-center justify-between bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-all">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        <span>Diarsipkan</span>
+                    </div>
+                    <span class="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.5 rounded font-black">{{ $archivedChatsCount }}</span>
+                </a>
+            @endif
         </div>
 
         <!-- Scrollable Chats List -->
@@ -63,6 +80,13 @@
                 @forelse($contacts as $c)
                     @php
                         $isActive = ($activeUser && $activeUser->id === $c->id);
+                        $unreadCount = \App\Models\ProjectMessage::where('sender_id', $c->id)
+                            ->where('recipient_id', Auth::id())
+                            ->where('is_read', false)
+                            ->count();
+                        
+                        $isOnline = $c->last_seen_at && $c->last_seen_at->gt(now()->subMinutes(5));
+                        $lastSeenStr = $isOnline ? 'Online' : ($c->last_seen_at ? 'Terakhir dilihat ' . $c->last_seen_at->diffForHumans() : 'Offline');
                     @endphp
                     <a href="{{ route('chat.index', ['user_id' => $c->id]) }}" class="flex items-center gap-3 p-3.5 transition-all hover:bg-slate-50/80 {{ $isActive ? 'bg-indigo-50 border-r-4 border-indigo-600' : '' }}">
                         <div class="relative shrink-0">
@@ -73,14 +97,24 @@
                                     {{ substr($c->name, 0, 2) }}
                                 </div>
                             @endif
-                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-white"></span>
+                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 {{ $isOnline ? 'bg-emerald-500' : 'bg-slate-300' }} rounded-full border border-white" title="{{ $lastSeenStr }}"></span>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between">
                                 <h4 class="text-xs font-black text-slate-800 truncate">{{ $c->name }}</h4>
-                                <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold">{{ $c->role }}</span>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    @if($unreadCount > 0)
+                                        <span class="bg-rose-500 text-[9px] font-black text-white w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
+                                            {{ $unreadCount }}
+                                        </span>
+                                    @endif
+                                    <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold">{{ $c->role }}</span>
+                                </div>
                             </div>
-                            <p class="text-[10px] text-slate-400 truncate mt-0.5">{{ $c->position ?? 'Staff Anggota' }}</p>
+                            <div class="flex items-center justify-between mt-0.5">
+                                <p class="text-[10px] text-slate-400 truncate">{{ $c->position ?? 'Staff Anggota' }}</p>
+                                <span class="text-[8px] text-slate-400 font-medium shrink-0">{{ $isOnline ? 'online' : ($c->last_seen_at ? $c->last_seen_at->diffForHumans() : '') }}</span>
+                            </div>
                         </div>
                     </a>
                 @empty
@@ -137,7 +171,13 @@
                         @endif
                         <div>
                             <h3 class="text-xs font-black text-slate-800">{{ $activeUser->name }}</h3>
-                            <span class="text-[10px] text-emerald-500 font-bold block mt-0.5">Online (Direct Chat)</span>
+                            @php
+                                $activeOnline = $activeUser->last_seen_at && $activeUser->last_seen_at->gt(now()->subMinutes(5));
+                                $activeSeenStr = $activeOnline ? 'Online' : ($activeUser->last_seen_at ? 'Terakhir dilihat ' . $activeUser->last_seen_at->diffForHumans() : 'Offline');
+                            @endphp
+                            <span class="text-[10px] {{ $activeOnline ? 'text-emerald-500 font-bold' : 'text-slate-400 font-medium' }} block mt-0.5">
+                                {{ $activeSeenStr }}
+                            </span>
                         </div>
                     @else
                         <div class="w-10 h-10 rounded-xl bg-indigo-150 text-indigo-700 font-black text-xs flex items-center justify-center uppercase shrink-0">
@@ -150,7 +190,24 @@
                     @endif
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-3">
+                    <form action="{{ route('chat.toggle-archive') }}" method="POST" class="inline">
+                        @csrf
+                        @if($activeUser)
+                            <input type="hidden" name="user_id" value="{{ $activeUser->id }}">
+                        @else
+                            <input type="hidden" name="project_id" value="{{ $activeProject->id }}">
+                        @endif
+                        <button type="submit" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-100 hover:bg-slate-100 hover:text-slate-800 text-slate-500 rounded-xl text-[10px] font-black tracking-wider uppercase transition-all cursor-pointer">
+                            @if($isActiveChatArchived)
+                                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                                <span>Buka Arsip</span>
+                            @else
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7m7-7v14"></path></svg>
+                                <span>Arsipkan</span>
+                            @endif
+                        </button>
+                    </form>
                     <span class="text-[9px] font-black uppercase text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">LUNOU Live</span>
                 </div>
             </div>
@@ -237,10 +294,25 @@
                                 </div>
                             @endif
 
-                            <!-- Bubble Timestamp -->
-                            <span class="block text-[10px] text-right mt-1 {{ $isMe ? 'text-white/70' : 'text-slate-400' }} font-bold">
-                                {{ $msg->created_at->format('H:i') }}
-                            </span>
+                            <!-- Bubble Footer: Timestamp & Checkmarks -->
+                            <div class="flex items-center justify-end gap-1 mt-1">
+                                <span class="block text-[9px] {{ $isMe ? 'text-white/70' : 'text-slate-400' }} font-bold">
+                                    {{ $msg->created_at->format('H:i') }}
+                                </span>
+                                @if($isMe)
+                                    @if($msg->is_read)
+                                        <!-- Double ticks blue/sky -->
+                                        <svg class="w-3.5 h-3.5 text-sky-300 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7M5 12l7 7-7-7"></path>
+                                        </svg>
+                                    @else
+                                        <!-- Single tick -->
+                                        <svg class="w-3.5 h-3.5 text-white/50 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    @endif
+                                @endif
+                            </div>
                         </div>
                     </div>
                 @empty
@@ -624,7 +696,13 @@
                         </div>
                     ` : ''}
                     
-                    <span class="block text-[10px] text-right mt-1 ${isMe ? 'text-white/70' : 'text-slate-400'} font-bold">${msg.created_at}</span>
+                    <div class="flex items-center justify-end gap-1 mt-1">
+                        <span class="block text-[9px] ${isMe ? 'text-white/70' : 'text-slate-400'} font-bold">${msg.created_at}</span>
+                        ${isMe ? (msg.is_read 
+                            ? `<svg class="w-3.5 h-3.5 text-sky-300 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7M5 12l7 7-7-7"></path></svg>`
+                            : `<svg class="w-3.5 h-3.5 text-white/50 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>`
+                        ) : ''}
+                    </div>
                 </div>
             </div>
             `;

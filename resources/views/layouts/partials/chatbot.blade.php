@@ -173,12 +173,47 @@
         }
     }
 
+    function playMascotClickSound() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            
+            const ctx = new AudioContext();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.type = 'sine';
+            
+            // Frequency slides up: 450Hz to 850Hz in 0.12 seconds
+            osc.frequency.setValueAtTime(450, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(850, ctx.currentTime + 0.1);
+            
+            // Gain envelope: fast decay
+            gain.gain.setValueAtTime(0.12, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.11);
+        } catch (e) {
+            console.error("Web Audio click sound failed:", e);
+        }
+    }
+
     function toggleLunouChatbot() {
+        if (window.isDraggingBot) {
+            return;
+        }
+        
+        playMascotClickSound();
+
         const win = document.getElementById('lunou-chatbot-window');
         const mascot = document.getElementById('lunou-mascot-img');
         
         isBotWindowOpen = !isBotWindowOpen;
-        
+
         if (isBotWindowOpen) {
             win.classList.remove('hidden');
             setTimeout(() => {
@@ -318,5 +353,157 @@
             "'": '&#039;'
         };
         return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    // Make Floating Mascot Chatbot Draggable
+    function initMascotDrag() {
+        const wrapper = document.getElementById('lunou-chatbot-wrapper');
+        if (!wrapper) return;
+        const triggerBtn = wrapper.querySelector('button[type="button"]');
+        if (!triggerBtn) return;
+        const mascotImg = document.getElementById('lunou-mascot-img');
+        
+        let isMouseDown = false;
+        let startX = 0;
+        let startY = 0;
+        let originalLeft = 0;
+        let originalTop = 0;
+        let hasDragged = false;
+
+        // Block native browser dragging ghost image
+        triggerBtn.addEventListener('dragstart', function (e) {
+            e.preventDefault();
+        });
+        if (mascotImg) {
+            mascotImg.addEventListener('dragstart', function (e) {
+                e.preventDefault();
+            });
+        }
+        
+        triggerBtn.addEventListener('mousedown', function (e) {
+            isMouseDown = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            const rect = wrapper.getBoundingClientRect();
+            originalLeft = rect.left;
+            originalTop = rect.top;
+            
+            hasDragged = false;
+            document.body.style.userSelect = 'none';
+        });
+        
+        triggerBtn.addEventListener('touchstart', function (e) {
+            isMouseDown = true;
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            
+            const rect = wrapper.getBoundingClientRect();
+            originalLeft = rect.left;
+            originalTop = rect.top;
+            
+            hasDragged = false;
+            document.body.style.userSelect = 'none';
+        }, { passive: true });
+        
+        document.addEventListener('mousemove', function (e) {
+            if (!isMouseDown) return;
+            
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            
+            if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                hasDragged = true;
+                window.isDraggingBot = true;
+            }
+            
+            if (hasDragged) {
+                wrapper.classList.remove('bottom-24', 'md:bottom-6', 'right-6');
+                
+                let newLeft = originalLeft + deltaX;
+                let newTop = originalTop + deltaY;
+                
+                const wrapperWidth = wrapper.offsetWidth;
+                const wrapperHeight = wrapper.offsetHeight;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                
+                if (newLeft < 10) newLeft = 10;
+                if (newTop < 10) newTop = 10;
+                if (newLeft + wrapperWidth > viewportWidth - 10) newLeft = viewportWidth - wrapperWidth - 10;
+                if (newTop + wrapperHeight > viewportHeight - 10) newTop = viewportHeight - wrapperHeight - 10;
+                
+                wrapper.style.setProperty('left', newLeft + 'px', 'important');
+                wrapper.style.setProperty('top', newTop + 'px', 'important');
+                wrapper.style.setProperty('bottom', 'auto', 'important');
+                wrapper.style.setProperty('right', 'auto', 'important');
+            }
+        });
+        
+        document.addEventListener('touchmove', function (e) {
+            if (!isMouseDown) return;
+            
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - startX;
+            const deltaY = touch.clientY - startY;
+            
+            if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                hasDragged = true;
+                window.isDraggingBot = true;
+            }
+            
+            if (hasDragged) {
+                if (e.cancelable) {
+                    e.preventDefault();
+                }
+                
+                wrapper.classList.remove('bottom-24', 'md:bottom-6', 'right-6');
+                
+                let newLeft = originalLeft + deltaX;
+                let newTop = originalTop + deltaY;
+                
+                const wrapperWidth = wrapper.offsetWidth;
+                const wrapperHeight = wrapper.offsetHeight;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                
+                if (newLeft < 10) newLeft = 10;
+                if (newTop < 10) newTop = 10;
+                if (newLeft + wrapperWidth > viewportWidth - 10) newLeft = viewportWidth - wrapperWidth - 10;
+                if (newTop + wrapperHeight > viewportHeight - 10) newTop = viewportHeight - wrapperHeight - 10;
+                
+                wrapper.style.setProperty('left', newLeft + 'px', 'important');
+                wrapper.style.setProperty('top', newTop + 'px', 'important');
+                wrapper.style.setProperty('bottom', 'auto', 'important');
+                wrapper.style.setProperty('right', 'auto', 'important');
+            }
+        }, { passive: false });
+        
+        document.addEventListener('mouseup', function () {
+            if (isMouseDown) {
+                isMouseDown = false;
+                document.body.style.userSelect = '';
+                setTimeout(() => {
+                    window.isDraggingBot = false;
+                }, 100);
+            }
+        });
+        
+        document.addEventListener('touchend', function () {
+            if (isMouseDown) {
+                isMouseDown = false;
+                document.body.style.userSelect = '';
+                setTimeout(() => {
+                    window.isDraggingBot = false;
+                }, 100);
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initMascotDrag);
+    } else {
+        initMascotDrag();
     }
 </script>

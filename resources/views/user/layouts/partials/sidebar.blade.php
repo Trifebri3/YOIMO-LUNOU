@@ -1,10 +1,15 @@
 @php
     $user = Auth::user();
     
-    // Ambil semua proyek yang diikuti user
-    $myProjects = \App\Models\Project::whereJsonContains('team_matrix', ['user_id' => (string) $user->id])
-        ->orWhereJsonContains('team_matrix', ['user_id' => (int) $user->id])
-        ->orWhere('created_by', $user->id)
+    // Ambil semua proyek yang diikuti user (hanya yang aktif/belum diarsip)
+    $myProjects = \App\Models\Project::where('is_archived', false)
+        ->where(function ($query) use ($user) {
+            $query->whereJsonContains('team_matrix', ['user_id' => (string) $user->id])
+                ->orWhereJsonContains('team_matrix', ['user_id' => (int) $user->id])
+                ->orWhere('team_matrix', 'like', '%"user_id":' . $user->id . '%')
+                ->orWhere('team_matrix', 'like', '%"user_id":"' . $user->id . '"%')
+                ->orWhere('created_by', $user->id);
+        })
         ->with('company')
         ->latest()
         ->get();
@@ -160,6 +165,14 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                         </svg>
                         <span>LUNOU Chat Room</span>
+                        @php
+                            $unreadChatCount = \App\Models\ProjectMessage::where('recipient_id', Auth::id())->where('is_read', false)->count();
+                        @endphp
+                        @if($unreadChatCount > 0)
+                            <span class="ml-auto bg-rose-500 text-[10px] font-black text-white px-2 py-0.5 rounded-full ring-2 ring-white animate-pulse">
+                                {{ $unreadChatCount }}
+                            </span>
+                        @endif
                     </a>
 
                     <!-- AI Settings Link -->

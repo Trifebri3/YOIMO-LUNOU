@@ -20,6 +20,8 @@
             <span>{{ now()->format('d M Y') }}</span>
         </div>
 
+        @include('layouts.partials.notifications')
+
         <!-- Profil Link -->
         <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded-xl transition-all">
             @if(Auth::user()->avatar)

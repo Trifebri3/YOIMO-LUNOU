@@ -31,6 +31,8 @@
                 </div>
             @endif
 
+            @include('layouts.partials.notifications')
+
             <!-- Logout -->
             <form method="POST" action="{{ route('logout') }}" class="inline">
                 @csrf

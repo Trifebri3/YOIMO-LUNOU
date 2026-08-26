@@ -1,11 +1,15 @@
 @php
     $user = Auth::user();
-    $myProjects = \App\Models\Project::whereJsonContains('team_matrix', ['user_id' => (string) $user->id])
-        ->orWhereJsonContains('team_matrix', ['user_id' => (int) $user->id])
-        ->orWhere('created_by', $user->id)
-        ->with('company')
-        ->latest()
-        ->get();
+    $myProjects = \App\Models\Project::where(function ($query) use ($user) {
+        $query->whereJsonContains('team_matrix', ['user_id' => (string) $user->id])
+            ->orWhereJsonContains('team_matrix', ['user_id' => (int) $user->id])
+            ->orWhere('team_matrix', 'like', '%"user_id":' . $user->id . '%')
+            ->orWhere('team_matrix', 'like', '%"user_id":"' . $user->id . '"%')
+            ->orWhere('created_by', $user->id);
+    })
+    ->with('company')
+    ->latest()
+    ->get();
     $assignedCompanies = $myProjects->pluck('company')->filter()->unique('id');
     $activeCompany = isset($company) ? $company : $assignedCompanies->first();
 @endphp
