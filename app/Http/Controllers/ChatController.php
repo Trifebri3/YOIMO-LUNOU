@@ -4,12 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\ProjectMessage;
+use App\Models\ProjectTask;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ChatController extends Controller
@@ -22,9 +21,15 @@ class ChatController extends Controller
         $userId = Auth::id();
 
         // 1. Ambil list personal contacts (semua user kecuali diri sendiri)
-        $contacts = User::where('id', '!=', $userId)
-            ->orderBy('name', 'asc')
-            ->get(['id', 'name', 'email', 'role', 'position', 'avatar']);
+        if (session()->has('demo_track_id')) {
+            $contacts = User::whereIn('email', ['management@gmail.com', 'user@gmail.com'])
+                ->where('id', '!=', $userId)
+                ->get(['id', 'name', 'email', 'role', 'position', 'avatar']);
+        } else {
+            $contacts = User::where('id', '!=', $userId)
+                ->orderBy('name', 'asc')
+                ->get(['id', 'name', 'email', 'role', 'position', 'avatar']);
+        }
 
         // 2. Ambil list project group (semua proyek yang ada)
         $groups = Project::orderBy('name', 'asc')->get(['id', 'name', 'category', 'status']);
@@ -36,7 +41,7 @@ class ChatController extends Controller
 
         if ($request->filled('user_id')) {
             $activeUser = User::findOrFail($request->user_id);
-            
+
             // Tandai sudah dibaca
             ProjectMessage::where('sender_id', $activeUser->id)
                 ->where('recipient_id', $userId)
@@ -66,9 +71,9 @@ class ChatController extends Controller
         // Ambil daftar tugas yang bisa ditarik
         $availableTasks = collect();
         if ($activeUser) {
-            $availableTasks = \App\Models\ProjectTask::with('project')->latest()->get();
+            $availableTasks = ProjectTask::with('project')->latest()->get();
         } elseif ($activeProject) {
-            $availableTasks = \App\Models\ProjectTask::where('project_id', $activeProject->id)->latest()->get();
+            $availableTasks = ProjectTask::where('project_id', $activeProject->id)->latest()->get();
         }
 
         return view('chat.index', compact('contacts', 'groups', 'activeUser', 'activeProject', 'messages', 'availableTasks'));
@@ -79,15 +84,19 @@ class ChatController extends Controller
      */
     public function send(Request $request): JsonResponse
     {
+        if (session()->has('demo_track_id')) {
+            return response()->json(['success' => false, 'error' => 'Fitur kirim chat dinonaktifkan di akun demo.'], 403);
+        }
+
         $request->validate([
-            'message'      => ['nullable', 'string', 'max:5000'],
+            'message' => ['nullable', 'string', 'max:5000'],
             'recipient_id' => ['nullable', 'exists:users,id'],
-            'project_id'   => ['nullable', 'exists:projects,id'],
-            'task_id'      => ['nullable', 'exists:project_tasks,id'],
-            'file'         => ['nullable', 'file', 'max:10240'], // Max 10MB
+            'project_id' => ['nullable', 'exists:projects,id'],
+            'task_id' => ['nullable', 'exists:project_tasks,id'],
+            'file' => ['nullable', 'file', 'max:10240'], // Max 10MB
         ]);
 
-        if (empty($request->message) && !$request->hasFile('file') && empty($request->task_id)) {
+        if (empty($request->message) && ! $request->hasFile('file') && empty($request->task_id)) {
             return response()->json(['success' => false, 'error' => 'Pesan, file, atau referensi tugas tidak boleh kosong.'], 422);
         }
 
@@ -101,14 +110,14 @@ class ChatController extends Controller
         }
 
         $msg = ProjectMessage::create([
-            'sender_id'       => Auth::id(),
-            'recipient_id'    => $request->recipient_id,
-            'project_id'      => $request->project_id,
-            'task_id'         => $request->task_id,
-            'message'         => $request->message,
+            'sender_id' => Auth::id(),
+            'recipient_id' => $request->recipient_id,
+            'project_id' => $request->project_id,
+            'task_id' => $request->task_id,
+            'message' => $request->message,
             'attachment_file' => $attachmentPath,
             'attachment_name' => $attachmentName,
-            'is_read'         => false,
+            'is_read' => false,
         ]);
 
         // Reload task relationship
@@ -119,22 +128,22 @@ class ChatController extends Controller
         return response()->json([
             'success' => true,
             'message' => [
-                'id'              => $msg->id,
-                'sender_id'       => $msg->sender_id,
-                'sender_name'     => Auth::user()->name,
-                'sender_avatar'   => Auth::user()->avatar ? asset('storage/' . Auth::user()->avatar) : null,
-                'message'         => $msg->message,
-                'attachment_url'  => $msg->attachment_file ? asset('storage/' . $msg->attachment_file) : null,
+                'id' => $msg->id,
+                'sender_id' => $msg->sender_id,
+                'sender_name' => Auth::user()->name,
+                'sender_avatar' => Auth::user()->avatar ? asset('storage/'.Auth::user()->avatar) : null,
+                'message' => $msg->message,
+                'attachment_url' => $msg->attachment_file ? asset('storage/'.$msg->attachment_file) : null,
                 'attachment_name' => $msg->attachment_name,
-                'created_at'      => $msg->created_at->format('H:i'),
-                'task'            => $msg->task ? [
-                    'id'           => $msg->task->id,
-                    'title'        => $msg->task->title,
-                    'status'       => $msg->task->status,
-                    'priority'     => $msg->task->priority,
+                'created_at' => $msg->created_at->format('H:i'),
+                'task' => $msg->task ? [
+                    'id' => $msg->task->id,
+                    'title' => $msg->task->title,
+                    'status' => $msg->task->status,
+                    'priority' => $msg->task->priority,
                     'project_name' => $msg->task->project->name ?? 'Proyek',
                 ] : null,
-            ]
+            ],
         ]);
     }
 
@@ -156,7 +165,7 @@ class ChatController extends Controller
             })->orWhere(function ($q) use ($userId, $activeUserId) {
                 $q->where('sender_id', $activeUserId)->where('recipient_id', $userId);
             });
-            
+
             // Tandai pesan masuk yang baru terbaca
             ProjectMessage::where('sender_id', $activeUserId)
                 ->where('recipient_id', $userId)
@@ -173,19 +182,19 @@ class ChatController extends Controller
 
         $formatted = $newMessages->map(function ($msg) {
             return [
-                'id'              => $msg->id,
-                'sender_id'       => $msg->sender_id,
-                'sender_name'     => $msg->sender->name,
-                'sender_avatar'   => $msg->sender->avatar ? asset('storage/' . $msg->sender->avatar) : null,
-                'message'         => $msg->message,
-                'attachment_url'  => $msg->attachment_file ? asset('storage/' . $msg->attachment_file) : null,
+                'id' => $msg->id,
+                'sender_id' => $msg->sender_id,
+                'sender_name' => $msg->sender->name,
+                'sender_avatar' => $msg->sender->avatar ? asset('storage/'.$msg->sender->avatar) : null,
+                'message' => $msg->message,
+                'attachment_url' => $msg->attachment_file ? asset('storage/'.$msg->attachment_file) : null,
                 'attachment_name' => $msg->attachment_name,
-                'created_at'      => $msg->created_at->format('H:i'),
-                'task'            => $msg->task ? [
-                    'id'           => $msg->task->id,
-                    'title'        => $msg->task->title,
-                    'status'       => $msg->task->status,
-                    'priority'     => $msg->task->priority,
+                'created_at' => $msg->created_at->format('H:i'),
+                'task' => $msg->task ? [
+                    'id' => $msg->task->id,
+                    'title' => $msg->task->title,
+                    'status' => $msg->task->status,
+                    'priority' => $msg->task->priority,
                     'project_name' => $msg->task->project->name ?? 'Proyek',
                 ] : null,
             ];

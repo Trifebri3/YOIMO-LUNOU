@@ -201,4 +201,23 @@ test('demo session censors chat messages and protects credentials features', fun
     $this->actingAs($superadmin)->withSession(['demo_track_id' => $trackId])->post(route('superadmin.notification-settings.test-email'), [
         'test_email_address' => 'hacker@mail.com',
     ])->assertSessionHas('error');
+
+    // 6. Test Chat Room contact list is filtered & blocked
+    $chatView = $this->actingAs($user)->withSession(['demo_track_id' => $trackId])->get(route('chat.index'));
+    $chatView->assertStatus(200);
+    $chatView->assertViewHas('contacts', function ($contacts) {
+        // Should only contain the demo user (role 'user' Client User or 'management' Manager Eksekutif)
+        // And should NOT contain other real users from DatabaseSeeder (like finance, superadmin, etc.)
+        foreach ($contacts as $contact) {
+            if ($contact->email !== 'management@gmail.com' && $contact->email !== 'user@gmail.com') {
+                return false;
+            }
+        }
+
+        return true;
+    });
+
+    $this->actingAs($user)->withSession(['demo_track_id' => $trackId])->post(route('chat.send'), [
+        'message' => 'Hack Chat',
+    ])->assertStatus(403);
 });
