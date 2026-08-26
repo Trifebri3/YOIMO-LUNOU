@@ -221,21 +221,50 @@
             
             <!-- Roster Anggota Card -->
             <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
-                <h3 class="text-sm font-black text-slate-900">Roster Anggota</h3>
+                <h3 class="text-sm font-black text-slate-900">Roster Anggota ({{ $teamMembers->count() + ($company->manager && !$teamMembers->contains('id', $company->manager_id) ? 1 : 0) }})</h3>
                 
                 <div class="space-y-3">
-                    <div class="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-xl bg-teal-100 text-teal-800 font-black text-xs flex items-center justify-center">
-                                {{ strtoupper(substr($company->manager->name ?? 'OF', 0, 2)) }}
+                    <!-- PIC / Manager Perusahaan (Selalu Ditampilkan Pertama) -->
+                    @if($company->manager)
+                        <div class="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                @if($company->manager->avatar)
+                                    <img src="{{ asset('storage/' . $company->manager->avatar) }}" alt="{{ $company->manager->name }}" class="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 shrink-0">
+                                @else
+                                    <div class="w-9 h-9 rounded-xl bg-teal-100 text-teal-800 font-black text-xs flex items-center justify-center">
+                                        {{ strtoupper(substr($company->manager->name ?? 'OF', 0, 2)) }}
+                                    </div>
+                                @endif
+                                <div>
+                                    <div class="text-xs font-black text-slate-900">{{ $company->manager->name }}</div>
+                                    <span class="text-[10px] text-indigo-600 font-bold uppercase">owner / manager</span>
+                                </div>
                             </div>
-                            <div>
-                                <div class="text-xs font-black text-slate-900">{{ $company->manager->name ?? 'Official Team' }}</div>
-                                <span class="text-[10px] text-slate-400">owner / pic</span>
-                            </div>
+                            <span class="text-[10px] text-slate-400 truncate max-w-[120px]">{{ $company->manager->email }}</span>
                         </div>
-                        <span class="text-[10px] text-slate-400 truncate max-w-[120px]">{{ $company->manager->email ?? '-' }}</span>
-                    </div>
+                    @endif
+
+                    <!-- Anggota Tim Lainnya -->
+                    @foreach($teamMembers as $member)
+                        @if(!$company->manager || $company->manager_id !== $member->id)
+                            <div class="p-3.5 bg-slate-50/60 border border-slate-100 rounded-2xl flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    @if($member->avatar)
+                                        <img src="{{ asset('storage/' . $member->avatar) }}" alt="{{ $member->name }}" class="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 shrink-0">
+                                    @else
+                                        <div class="w-9 h-9 rounded-xl bg-slate-900 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                                            {{ strtoupper(substr($member->name, 0, 2)) }}
+                                        </div>
+                                    @endif
+                                    <div>
+                                        <div class="text-xs font-black text-slate-900">{{ $member->name }}</div>
+                                        <span class="text-[10px] text-slate-400 uppercase font-bold">{{ $member->position ?? $member->role }}</span>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] text-slate-400 truncate max-w-[120px]">{{ $member->email }}</span>
+                            </div>
+                        @endif
+                    @endforeach
                 </div>
             </div>
 

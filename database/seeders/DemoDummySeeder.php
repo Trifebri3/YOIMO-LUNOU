@@ -55,6 +55,17 @@ class DemoDummySeeder extends Seeder
         }
         $employeeId = $employee->id;
 
+        $finance = User::where('role', 'finance')->first();
+        if (! $finance) {
+            $finance = User::create([
+                'name' => 'Staff Keuangan',
+                'email' => 'finance@gmail.com',
+                'password' => bcrypt('password123'),
+                'role' => 'finance',
+            ]);
+        }
+        $financeId = $finance->id;
+
         // 1. Seed Company Profile
         $company = CompanyProfile::create([
             'manager_id' => $managerId,
@@ -83,6 +94,11 @@ class DemoDummySeeder extends Seeder
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ]);
+
+        // Link seeded users to this company profile
+        $manager->update(['company_profile_id' => $company->id]);
+        $employee->update(['company_profile_id' => $company->id]);
+        $finance->update(['company_profile_id' => $company->id]);
 
         // 2. Seed Project
         $project = Project::create([

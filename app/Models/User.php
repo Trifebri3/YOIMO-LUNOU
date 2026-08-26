@@ -11,6 +11,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
+        'company_profile_id',
         'name',
         'email',
         'password',
@@ -58,12 +59,12 @@ class User extends Authenticatable
     // Mutator Format Nomor WhatsApp Standar Fonnte (628xxx)
     public function setPhoneAttribute($value): void
     {
-        if (!empty($value)) {
+        if (! empty($value)) {
             $cleanNumber = preg_replace('/[^0-9]/', '', $value);
             if (str_starts_with($cleanNumber, '0')) {
-                $cleanNumber = '62' . substr($cleanNumber, 1);
+                $cleanNumber = '62'.substr($cleanNumber, 1);
             } elseif (str_starts_with($cleanNumber, '8')) {
-                $cleanNumber = '62' . $cleanNumber;
+                $cleanNumber = '62'.$cleanNumber;
             }
             $this->attributes['phone'] = $cleanNumber;
         } else {
@@ -71,12 +72,14 @@ class User extends Authenticatable
         }
     }
 
-
     // Tambahkan di dalam class User
-public function managedCompanies()
-{
-    return $this->hasMany(CompanyProfile::class, 'manager_id');
-}
+    public function managedCompanies()
+    {
+        return $this->hasMany(CompanyProfile::class, 'manager_id');
+    }
 
-
+    public function company()
+    {
+        return $this->belongsTo(CompanyProfile::class, 'company_profile_id');
+    }
 }

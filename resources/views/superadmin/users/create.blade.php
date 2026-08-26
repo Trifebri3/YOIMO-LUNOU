@@ -61,6 +61,18 @@
                 @error('role') <span class="text-rose-500 text-[10px] font-semibold">{{ $message }}</span> @enderror
             </div>
 
+            <!-- Workspace / Perusahaan -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Workspace / Perusahaan</label>
+                <select name="company_profile_id" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-emerald-500 focus:border-emerald-500 font-medium">
+                    <option value="">-- Tidak Dikaitkan ke Perusahaan --</option>
+                    @foreach($companies as $c)
+                        <option value="{{ $c->id }}" {{ old('company_profile_id') == $c->id ? 'selected' : '' }}>{{ $c->company_name }}</option>
+                    @endforeach
+                </select>
+                @error('company_profile_id') <span class="text-rose-500 text-[10px] font-semibold">{{ $message }}</span> @enderror
+            </div>
+
             <!-- Password Awal -->
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Password Akun</label>

@@ -346,11 +346,22 @@
                     <p class="text-xs font-medium text-slate-400">Belum ada tugas yang dibuat untuk proyek ini.</p>
                 </div>
             @endforelse
+
+            <!-- Pagination Controls -->
+            <div id="tasks-pagination-controls" class="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl mt-4">
+                <button type="button" id="prev-page-btn" onclick="changeTasksPage(-1)" class="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                    &larr; Sebelumnya
+                </button>
+                <span id="page-info" class="text-xs font-bold text-slate-500">Halaman 1 dari 1</span>
+                <button type="button" id="next-page-btn" onclick="changeTasksPage(1)" class="px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                    Selanjutnya &rarr;
+                </button>
+            </div>
         </div>
 
         <!-- Kolom Kanan: Form Buat Tugas Baru (5 Kolom) -->
         <div class="xl:col-span-5 space-y-6">
-            <div class="bg-white border border-slate-100 rounded-3xl p-7 shadow-sm space-y-5 sticky top-24">
+            <div class="bg-white border border-slate-100 rounded-3xl p-7 shadow-sm space-y-5 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
                 <div class="flex items-center justify-between">
                     <div>
                         <h2 class="text-sm font-black text-slate-900 tracking-tight">+ Terbitkan Tugas Baru</h2>
@@ -521,8 +532,15 @@
     <script type="text/javascript" src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js"></script>
 
     <script>
-        // Client-side quick filter logic for management task index
+        // Client-side quick filter and pagination logic for management task index
+        let currentTasksPage = 1;
+        const tasksPerPage = 4; // Display 4 tasks per page
+        let activeFilterType = 'all';
+
         function filterManagementTasks(type, btn) {
+            activeFilterType = type;
+            currentTasksPage = 1; // Reset to page 1 on filter change
+            
             document.querySelectorAll('.task-filter-btn').forEach(b => {
                 b.classList.remove('bg-indigo-600', 'text-white', 'shadow-xs');
                 b.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-600');
@@ -530,35 +548,69 @@
             btn.classList.add('bg-indigo-600', 'text-white', 'shadow-xs');
             btn.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-600');
 
-            document.querySelectorAll('.project-task-card').forEach(card => {
+            updatePaginatedTasks();
+        }
+
+        function updatePaginatedTasks() {
+            const allCards = Array.from(document.querySelectorAll('.project-task-card'));
+            
+            const matchedCards = allCards.filter(card => {
                 const isCompleted = (card.getAttribute('data-task-status') === 'Completed');
                 
-                if (type === 'all') {
-                    if (!isCompleted) {
-                        card.classList.remove('hidden');
-                    } else {
-                        card.classList.add('hidden');
-                    }
-                } else if (type === 'my') {
-                    if (card.getAttribute('data-task-my') === 'true' && !isCompleted) {
-                        card.classList.remove('hidden');
-                    } else {
-                        card.classList.add('hidden');
-                    }
-                } else if (type === 'open') {
-                    if (card.getAttribute('data-task-open') === 'true' && !isCompleted) {
-                        card.classList.remove('hidden');
-                    } else {
-                        card.classList.add('hidden');
-                    }
-                } else if (type === 'completed') {
-                    if (isCompleted) {
-                        card.classList.remove('hidden');
-                    } else {
-                        card.classList.add('hidden');
-                    }
+                if (activeFilterType === 'all') {
+                    return !isCompleted;
+                } else if (activeFilterType === 'my') {
+                    return (card.getAttribute('data-task-my') === 'true' && !isCompleted);
+                } else if (activeFilterType === 'open') {
+                    return (card.getAttribute('data-task-open') === 'true' && !isCompleted);
+                } else if (activeFilterType === 'completed') {
+                    return isCompleted;
+                }
+                return false;
+            });
+
+            const totalTasks = matchedCards.length;
+            const totalPages = Math.ceil(totalTasks / tasksPerPage) || 1;
+            
+            if (currentTasksPage > totalPages) {
+                currentTasksPage = totalPages;
+            }
+            if (currentTasksPage < 1) {
+                currentTasksPage = 1;
+            }
+
+            const startIndex = (currentTasksPage - 1) * tasksPerPage;
+            const endIndex = startIndex + tasksPerPage;
+
+            allCards.forEach(card => card.classList.add('hidden'));
+            
+            matchedCards.forEach((card, index) => {
+                if (index >= startIndex && index < endIndex) {
+                    card.classList.remove('hidden');
                 }
             });
+
+            const controls = document.getElementById('tasks-pagination-controls');
+            if (controls) {
+                if (totalTasks === 0) {
+                    controls.classList.add('hidden');
+                } else {
+                    controls.classList.remove('hidden');
+                    document.getElementById('page-info').innerText = `Halaman ${currentTasksPage} dari ${totalPages}`;
+                    document.getElementById('prev-page-btn').disabled = (currentTasksPage === 1);
+                    document.getElementById('next-page-btn').disabled = (currentTasksPage === totalPages);
+                }
+            }
+        }
+
+        function changeTasksPage(direction) {
+            currentTasksPage += direction;
+            updatePaginatedTasks();
+            
+            const tasksHeader = document.querySelector('h2.text-base.font-black.text-slate-900.tracking-tight');
+            if (tasksHeader) {
+                tasksHeader.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {

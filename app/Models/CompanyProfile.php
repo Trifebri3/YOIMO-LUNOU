@@ -61,4 +61,9 @@ class CompanyProfile extends Model
     {
         return $this->belongsTo(User::class, 'manager_id');
     }
+
+    public function employees()
+    {
+        return $this->hasMany(User::class, 'company_profile_id');
+    }
 }

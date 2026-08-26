@@ -158,7 +158,7 @@
 
         <!-- Kolom Kanan: Form Tambah Dokumen / Panduan Baru (5 Kolom) -->
         <div class="xl:col-span-5 space-y-6">
-            <div class="bg-white border border-slate-100 rounded-3xl p-7 shadow-sm space-y-5 sticky top-24">
+            <div class="bg-white border border-slate-100 rounded-3xl p-7 shadow-sm space-y-5 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
                 <div>
                     <h2 class="text-sm font-black text-slate-900 tracking-tight">+ Tambah Dokumen & Panduan</h2>
                     <p class="text-xs text-slate-400 mt-0.5">Unggah file repositori, tautan Google Drive/Figma, atau artikel panduan kerja.</p>

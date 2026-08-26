@@ -20,7 +20,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Kolom Kiri: LUNOU AI Company Profile Architect (4 Kolom) -->
         <div class="lg:col-span-4">
-            <div class="bg-slate-900 text-slate-100 border border-slate-800 rounded-3xl p-6 shadow-lg space-y-5 sticky top-24">
+            <div class="bg-slate-900 text-slate-100 border border-slate-800 rounded-3xl p-6 shadow-lg space-y-5 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
                 <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
                     <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/25 p-1 shrink-0">
                         <img src="{{ asset('icon/11.png') }}" alt="LUNOU" class="w-full h-full object-contain">

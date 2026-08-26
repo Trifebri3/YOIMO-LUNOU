@@ -186,7 +186,7 @@
 
         <!-- Kolom Kanan: Form Input Pembelanjaan Baru (4 Kolom) -->
         <div class="xl:col-span-4 space-y-6">
-            <div class="bg-white border border-slate-100 rounded-3xl p-7 shadow-sm space-y-5 sticky top-24">
+            <div class="bg-white border border-slate-100 rounded-3xl p-7 shadow-sm space-y-5 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
                 <div>
                     <h2 class="text-sm font-black text-slate-900 tracking-tight">+ Catat Belanja Baru</h2>
                     <p class="text-xs text-slate-400 mt-0.5">Input nominal dan unggah bukti kwitansi / struk pembayaran.</p>
