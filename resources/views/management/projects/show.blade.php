@@ -28,74 +28,75 @@
                 </p>
             </div>
 
-            <!-- Action Toolbar Responsif -->
-            <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            <!-- Action Toolbar Grid (Highly Responsive & Premium) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap items-center gap-2 w-full lg:w-auto mt-4 lg:mt-0 font-sans text-xs">
                 <!-- Papan Tugas -->
-                <a href="{{ route('management.projects.tasks.index', $project->id) }}" class="flex-1 sm:flex-initial px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-                    <span>Papan Tugas</span>
+                <a href="{{ route('management.projects.tasks.index', $project->id) }}" class="flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-xs">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    <span class="truncate">Papan Tugas</span>
                 </a>
 
-
-                <!-- Workspace Agenda & Kalender (BARU) -->
-                <a href="{{ route('management.projects.agendas.index', $project->id) }}" class="flex-1 sm:flex-initial px-4 py-2.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
-                    <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    <span>Agenda & Event</span>
+                <!-- Workspace Agenda -->
+                <a href="{{ route('management.projects.agendas.index', $project->id) }}" class="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-50 hover:bg-purple-100 border border-purple-100 text-purple-700 font-bold rounded-xl transition-all">
+                    <svg class="w-3.5 h-3.5 text-purple-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="truncate">Agenda & Event</span>
                 </a>
 
-<!-- Laporan Belanja & Keuangan (BARU) -->
-                <a href="{{ route('management.projects.expenses.index', $project->id) }}" class="flex-1 sm:flex-initial px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
-                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <span>Laporan Belanja</span>
+                <!-- Laporan Belanja -->
+                <a href="{{ route('management.projects.expenses.index', $project->id) }}" class="flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 text-emerald-800 font-bold rounded-xl transition-all">
+                    <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="truncate">Laporan Belanja</span>
                     @if(!$project->is_financial_transparent)
-                        <span class="w-2 h-2 rounded-full bg-slate-400" title="Transparansi dinonaktifkan"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-450 shrink-0" title="Transparansi dinonaktifkan"></span>
                     @endif
                 </a>
 
-                <!-- Perpustakaan Dokumen & Panduan (BARU) -->
-                <a href="{{ route('management.projects.documents.index', $project->id) }}" class="flex-1 sm:flex-initial px-4 py-2.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
-                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                    <span>Dokumen & SOP</span>
-                </a>
-                
-                <!-- Linimasa / Roadmap -->
-                <a href="{{ route('management.projects.roadmaps.index', $project->id) }}" class="flex-1 sm:flex-initial px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
-                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    <span>Linimasa</span>
+                <!-- Perpustakaan Dokumen -->
+                <a href="{{ route('management.projects.documents.index', $project->id) }}" class="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-100 text-blue-700 font-bold rounded-xl transition-all">
+                    <svg class="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    <span class="truncate">Dokumen & SOP</span>
                 </a>
 
-                <!-- Portal Klien Share Settings Button -->
-                <button type="button" onclick="openClientPortalConfigModal()" class="flex-1 sm:flex-initial px-4 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                    <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 10.742l-1.922-.641A3.001 3.001 0 1110 8c0 .411-.082.802-.232 1.157l1.922.641A3.001 3.001 0 1114 12c0-.411.082-.802.232-1.157l-1.922-.641A3.001 3.001 0 1110 8c0 .411.082.802.232 1.157z"></path></svg>
-                    <span>Portal Klien</span>
+                <!-- Linimasa / Roadmap -->
+                <a href="{{ route('management.projects.roadmaps.index', $project->id) }}" class="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold rounded-xl transition-all">
+                    <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="truncate">Linimasa</span>
+                </a>
+
+                <!-- Portal Klien -->
+                <button type="button" onclick="openClientPortalConfigModal()" class="flex items-center justify-center gap-1.5 px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-bold rounded-xl transition-all cursor-pointer">
+                    <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 10.742l-1.922-.641A3.001 3.001 0 1110 8c0 .411-.082.802-.232 1.157l1.922.641A3.001 3.001 0 1114 12c0-.411.082-.802.232-1.157l-1.922-.641A3.001 3.001 0 1110 8c0 .411.082.802.232 1.157z"></path></svg>
+                    <span class="truncate">Portal Klien</span>
                 </button>
 
-                <!-- Portofolio Showcase Settings -->
-                <a href="{{ route('management.projects.portfolio.edit', $project->id) }}" class="flex-1 sm:flex-initial px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
-                    <span>Seting Portofolio</span>
+                <!-- Seting Portofolio -->
+                <a href="{{ route('management.projects.portfolio.edit', $project->id) }}" class="flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold rounded-xl transition-all">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                    <span class="truncate">Seting Portofolio</span>
                 </a>
 
-                <!-- Edit Project -->
-                <a href="{{ route('management.projects.edit', $project->id) }}" class="px-3 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl transition-all" title="Edit Rincian Project">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                <!-- Log Aktivitas -->
+                <a href="{{ route('management.projects.logs.index', $project->id) }}" class="flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-black text-white font-bold rounded-xl transition-all shadow-xs">
+                    <svg class="w-3.5 h-3.5 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    <span class="truncate">Log Aktivitas</span>
                 </a>
 
-                <!-- Hapus Project (Form DELETE) -->
-                <form method="POST" action="{{ route('management.projects.destroy', $project->id) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus proyek ini beserta semua data di dalamnya secara permanen?')" class="inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="px-3 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 hover:text-rose-750 text-xs font-bold rounded-xl transition-all cursor-pointer" title="Hapus Project">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                </form>
+                <!-- Action Button Row for Edit & Delete (Full width on mobile grid, auto inline on desktop) -->
+                <div class="flex items-center gap-2 col-span-2 sm:col-span-1 justify-center w-full lg:w-auto">
+                    <!-- Edit Project -->
+                    <a href="{{ route('management.projects.edit', $project->id) }}" class="flex-1 lg:flex-none px-3.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold rounded-xl transition-all flex justify-center items-center" title="Edit Rincian Project">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    </a>
 
-                <!-- Log Audit & Aktivitas Proyek (BARU) -->
-                <a href="{{ route('management.projects.logs.index', $project->id) }}" class="flex-1 sm:flex-initial px-4 py-2.5 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5">
-                    <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                    <span>Log Aktivitas</span>
-                </a>
-                
+                    <!-- Hapus Project (Form DELETE) -->
+                    <form method="POST" action="{{ route('management.projects.destroy', $project->id) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus proyek ini beserta semua data di dalamnya secara permanen?')" class="flex-1 lg:flex-none">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="w-full px-3.5 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 hover:text-rose-750 font-bold rounded-xl transition-all cursor-pointer flex justify-center items-center" title="Hapus Project">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
 
