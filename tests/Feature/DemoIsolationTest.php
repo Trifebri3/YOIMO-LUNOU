@@ -2,6 +2,7 @@
 
 use App\Models\CompanyProfile;
 use App\Models\Project;
+use App\Models\ProjectMessage;
 use App\Models\User;
 use Carbon\Carbon;
 use Database\Seeders\DatabaseSeeder;
@@ -128,4 +129,76 @@ test('demo cleanup middleware deletes expired tracks and cascades deletes to wor
     // Verify nested items (e.g. roadmaps and tasks) are also gone due to cascade delete
     expect(DB::table('project_roadmaps')->count())->toBe(0);
     expect(DB::table('project_tasks')->count())->toBe(0);
+});
+
+test('demo session censors chat messages and protects credentials features', function () {
+    // 1. Log in to start demo session
+    $this->post('/demo-login', [
+        'token' => 'demo_management',
+        'name' => 'Security Test User',
+        'email' => 'security@example.com',
+        'organization' => 'Security Org',
+    ]);
+
+    $trackId = session('demo_track_id');
+    expect($trackId)->not->toBeNull();
+
+    // 2. Test chat message censorship accessor
+    $message = ProjectMessage::create([
+        'sender_id' => 2,
+        'message' => 'This is a secret API key or password',
+        'attachment_name' => 'sensitive_file.pdf',
+        'attachment_file' => 'chat_attachments/secret.pdf',
+    ]);
+
+    // Read values and expect them to be censored
+    expect($message->message)->toBe('🔒 [Disensor untuk Akun Demo]');
+    expect($message->attachment_name)->toBe('🔒 file_disensor.pdf');
+    expect($message->attachment_file)->toBeNull();
+
+    $user = User::where('role', 'management')->first();
+    $user->email_verified_at = now();
+    $user->save();
+
+    // 3. Test AI settings view is empty / protected
+    $settingsView = $this->actingAs($user)->withSession(['demo_track_id' => $trackId])->get(route('ai-settings.index'));
+    $settingsView->assertStatus(200);
+    // Should pass empty settings collection
+    $settingsView->assertViewHas('settings', function ($settings) {
+        return $settings->isEmpty();
+    });
+
+    // 4. Test AI settings modification is blocked
+    $this->actingAs($user)->withSession(['demo_track_id' => $trackId])->post(route('ai-settings.store'), [
+        'provider' => 'openai',
+        'name' => 'Hack OpenAI',
+        'api_key' => 'sk-hack123',
+        'model' => 'gpt-4o',
+    ])->assertSessionHas('error');
+
+    $this->actingAs($user)->withSession(['demo_track_id' => $trackId])->post(route('ai-settings.test'), [
+        'provider' => 'openai',
+        'model' => 'gpt-4',
+        'api_key' => 'test-key',
+    ])->assertStatus(403);
+
+    // 5. Test SMTP/WhatsApp credential changes are blocked (as superadmin)
+    $superadmin = User::where('role', 'superadmin')->first();
+    $superadmin->email_verified_at = now();
+    $superadmin->save();
+
+    $this->actingAs($superadmin)->withSession(['demo_track_id' => $trackId])->post(route('superadmin.notification-settings.update'), [
+        'mail_host' => 'smtp.hacker.com',
+        'mail_port' => '587',
+        'mail_username' => 'hacker',
+        'mail_encryption' => 'tls',
+        'mail_from_address' => 'hacker@mail.com',
+        'mail_from_name' => 'Hacker',
+        'fonnte_token' => 'hack-token',
+        'fonnte_default_target' => '08123456789',
+    ])->assertSessionHas('error');
+
+    $this->actingAs($superadmin)->withSession(['demo_track_id' => $trackId])->post(route('superadmin.notification-settings.test-email'), [
+        'test_email_address' => 'hacker@mail.com',
+    ])->assertSessionHas('error');
 });

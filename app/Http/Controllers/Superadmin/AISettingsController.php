@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Superadmin;
 use App\Http\Controllers\Controller;
 use App\Models\AISetting;
 use App\Services\AIService;
-use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +20,14 @@ class AISettingsController extends Controller
      */
     public function index(): View
     {
+        if (session()->has('demo_track_id')) {
+            $settings = collect();
+
+            return view('superadmin.ai-settings.index', compact('settings'));
+        }
+
         $settings = AISetting::where('user_id', Auth::id())->latest()->get();
+
         return view('superadmin.ai-settings.index', compact('settings'));
     }
 
@@ -29,6 +36,10 @@ class AISettingsController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        if (session()->has('demo_track_id')) {
+            return back()->with('error', 'Aksi dinonaktifkan di akun demo untuk menjaga keamanan kredensial.');
+        }
+
         $request->validate([
             'provider' => ['required', 'string', 'in:openai,gemini,openrouter'],
             'name' => ['required', 'string', 'max:100'],
@@ -40,7 +51,7 @@ class AISettingsController extends Controller
 
         $data = $request->only(['provider', 'name', 'api_key', 'model', 'base_url', 'settings']);
         $data['user_id'] = Auth::id();
-        
+
         // Buat set default fallback jika diset
         if ($request->has('enable_fallback')) {
             $data['settings']['enable_fallback'] = true;
@@ -60,6 +71,10 @@ class AISettingsController extends Controller
      */
     public function update(Request $request, AISetting $aiSetting): RedirectResponse
     {
+        if (session()->has('demo_track_id')) {
+            return back()->with('error', 'Aksi dinonaktifkan di akun demo untuk menjaga keamanan kredensial.');
+        }
+
         if ($aiSetting->user_id !== Auth::id()) {
             abort(403);
         }
@@ -73,7 +88,7 @@ class AISettingsController extends Controller
         ]);
 
         $data = $request->only(['name', 'model', 'base_url', 'settings']);
-        
+
         // Update API Key hanya jika user memasukkan input baru
         if ($request->filled('api_key') && $request->input('api_key') !== '••••••••') {
             $data['api_key'] = $request->input('api_key');
@@ -100,11 +115,16 @@ class AISettingsController extends Controller
      */
     public function destroy(AISetting $aiSetting): RedirectResponse
     {
+        if (session()->has('demo_track_id')) {
+            return back()->with('error', 'Aksi dinonaktifkan di akun demo untuk menjaga keamanan kredensial.');
+        }
+
         if ($aiSetting->user_id !== Auth::id()) {
             abort(403);
         }
 
         $aiSetting->delete();
+
         return redirect()->route('ai-settings.index')
             ->with('success', 'Konfigurasi AI Provider pribadi berhasil dihapus.');
     }
@@ -114,6 +134,10 @@ class AISettingsController extends Controller
      */
     public function activate(AISetting $aiSetting): RedirectResponse
     {
+        if (session()->has('demo_track_id')) {
+            return back()->with('error', 'Aksi dinonaktifkan di akun demo untuk menjaga keamanan kredensial.');
+        }
+
         if ($aiSetting->user_id !== Auth::id()) {
             abort(403);
         }
@@ -123,7 +147,7 @@ class AISettingsController extends Controller
             AISetting::where('user_id', Auth::id())
                 ->where('id', '!=', $aiSetting->id)
                 ->update(['is_active' => false]);
-            
+
             // Set the selected provider to active
             $aiSetting->update(['is_active' => true]);
         });
@@ -137,6 +161,13 @@ class AISettingsController extends Controller
      */
     public function test(Request $request): JsonResponse
     {
+        if (session()->has('demo_track_id')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fitur uji coba koneksi dinonaktifkan untuk akun demo.',
+            ], 403);
+        }
+
         $request->validate([
             'id' => ['nullable', 'integer'],
             'provider' => ['required', 'string', 'in:openai,gemini,openrouter'],
@@ -146,9 +177,9 @@ class AISettingsController extends Controller
         ]);
 
         $apiKey = $request->input('api_key');
-        
+
         // Jika API Key placeholder, ambil dari existing record di database
-        if ((!$apiKey || $apiKey === '••••••••') && $request->filled('id')) {
+        if ((! $apiKey || $apiKey === '••••••••') && $request->filled('id')) {
             $existing = AISetting::find($request->input('id'));
             if ($existing) {
                 if ($existing->user_id !== Auth::id()) {
@@ -158,10 +189,10 @@ class AISettingsController extends Controller
             }
         }
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             return response()->json([
                 'success' => false,
-                'message' => 'API Key wajib diisi untuk melakukan pengujian.'
+                'message' => 'API Key wajib diisi untuk melakukan pengujian.',
             ], 422);
         }
 
@@ -191,14 +222,15 @@ class AISettingsController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Koneksi gagal. Periksa kembali API Key atau Model ID.'
+                'message' => 'Koneksi gagal. Periksa kembali API Key atau Model ID.',
             ], 400);
 
         } catch (\Exception $e) {
-            Log::error('AI settings test connection failed: ' . $e->getMessage());
+            Log::error('AI settings test connection failed: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal terhubung: ' . $e->getMessage()
+                'message' => 'Gagal terhubung: '.$e->getMessage(),
             ], 500);
         }
     }
