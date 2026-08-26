@@ -11,6 +11,7 @@ use App\Models\ProjectExpense;
 use App\Models\ProjectRoadmap;
 use App\Models\ProjectTask;
 use App\Models\TaskProgressLog;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -22,9 +23,32 @@ class DemoDummySeeder extends Seeder
      */
     public function run(?int $demoTrackId = null): void
     {
+        // 0. Ensure users exist and fetch their IDs dynamically
+        $manager = User::where('role', 'management')->first();
+        if (! $manager) {
+            $manager = User::create([
+                'name' => 'Manager Eksekutif',
+                'email' => 'management@gmail.com',
+                'password' => bcrypt('password123'),
+                'role' => 'management',
+            ]);
+        }
+        $managerId = $manager->id;
+
+        $employee = User::where('role', 'user')->first();
+        if (! $employee) {
+            $employee = User::create([
+                'name' => 'Client User',
+                'email' => 'user@gmail.com',
+                'password' => bcrypt('password123'),
+                'role' => 'user',
+            ]);
+        }
+        $employeeId = $employee->id;
+
         // 1. Seed Company Profile
         $company = CompanyProfile::create([
-            'manager_id' => 2, // Demo Manager User ID
+            'manager_id' => $managerId,
             'demo_track_id' => $demoTrackId,
             'company_name' => 'DUMY',
             'slug' => 'dumy-'.Str::lower(Str::random(8)),
@@ -54,7 +78,7 @@ class DemoDummySeeder extends Seeder
         // 2. Seed Project
         $project = Project::create([
             'company_profile_id' => $company->id,
-            'created_by' => 2,
+            'created_by' => $managerId,
             'demo_track_id' => $demoTrackId,
             'name' => 'Pengembangan Sistem ERP Terintegrasi',
             'slug' => 'erp-terintegrasi-'.Str::lower(Str::random(6)),
@@ -83,8 +107,8 @@ class DemoDummySeeder extends Seeder
             ],
             'deliverables' => ['Dokumentasi API Core', 'Source Code Sandbox', 'Figma Prototype Link'],
             'team_matrix' => [
-                ['user_id' => 2, 'role' => 'Project Manager', 'name' => 'Demo Manager'],
-                ['user_id' => 4, 'role' => 'Lead Developer', 'name' => 'Demo Employee'],
+                ['user_id' => $managerId, 'role' => 'Project Manager', 'name' => 'Demo Manager'],
+                ['user_id' => $employeeId, 'role' => 'Lead Developer', 'name' => 'Demo Employee'],
             ],
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
@@ -128,8 +152,8 @@ class DemoDummySeeder extends Seeder
         $task1 = ProjectTask::create([
             'project_id' => $project->id,
             'project_roadmap_id' => $roadmap1->id,
-            'assigned_to' => 2, // Manager
-            'created_by' => 2,
+            'assigned_to' => $managerId,
+            'created_by' => $managerId,
             'title' => 'Riset Kebutuhan Modul ERP & Database',
             'description' => 'Menganalisis kebutuhan data pergudangan Aero Corp dan menyusun rancangan skema database.',
             'priority' => 'High',
@@ -148,8 +172,8 @@ class DemoDummySeeder extends Seeder
         $task2 = ProjectTask::create([
             'project_id' => $project->id,
             'project_roadmap_id' => $roadmap2->id,
-            'assigned_to' => 4, // Employee
-            'created_by' => 2,
+            'assigned_to' => $employeeId,
+            'created_by' => $managerId,
             'title' => 'Setup Boilerplate Laravel & DB Migrations',
             'description' => 'Menginisialisasi repository Laravel, konfigurasi database, dan pembuatan file migrations.',
             'priority' => 'Medium',
@@ -168,8 +192,8 @@ class DemoDummySeeder extends Seeder
         $task3 = ProjectTask::create([
             'project_id' => $project->id,
             'project_roadmap_id' => $roadmap2->id,
-            'assigned_to' => 4, // Employee
-            'created_by' => 2,
+            'assigned_to' => $employeeId,
+            'created_by' => $managerId,
             'title' => 'Implementasi API Modul Pergudangan',
             'description' => 'Membuat controller, model, dan API endpoint untuk manajemen stok barang masuk/keluar.',
             'priority' => 'High',
@@ -185,7 +209,7 @@ class DemoDummySeeder extends Seeder
         // Add progress logs for Task 3
         TaskProgressLog::create([
             'project_task_id' => $task3->id,
-            'user_id' => 4,
+            'user_id' => $employeeId,
             'progress_percentage' => 35,
             'notes' => 'Menyelesaikan skema tabel inventarisasi dan seeding data barang awal.',
             'obstacles' => 'Menyelaraskan relasi unit satuan barang dengan vendor.',
@@ -196,8 +220,8 @@ class DemoDummySeeder extends Seeder
         $task4 = ProjectTask::create([
             'project_id' => $project->id,
             'project_roadmap_id' => $roadmap2->id,
-            'assigned_to' => 2, // Manager
-            'created_by' => 2,
+            'assigned_to' => $managerId,
+            'created_by' => $managerId,
             'title' => 'Penyusunan Kontrak Kerja & SOP Tim Developer',
             'description' => 'Menyusun dokumen kontrak kerja sama dan standard operating procedure untuk tim pengembang.',
             'priority' => 'Low',
@@ -211,7 +235,7 @@ class DemoDummySeeder extends Seeder
         // 5. Seed Agendas
         ProjectAgenda::create([
             'project_id' => $project->id,
-            'created_by' => 2,
+            'created_by' => $managerId,
             'title' => 'Rapat Kick-off & Penyelarasan Tim',
             'description' => 'Pertemuan tatap muka untuk membahas detail scope proyek ERP Aero Corp.',
             'category' => 'Meeting Offline',
@@ -222,7 +246,7 @@ class DemoDummySeeder extends Seeder
             'recurrence' => 'once',
             'location_type' => 'offline',
             'location_address' => 'Ruang Meeting Utama - Co-working Space Kancah',
-            'attendee_ids' => [2, 4],
+            'attendee_ids' => [$managerId, $employeeId],
             'agenda_notes' => 'Klien menyetujui timeline dan metode koordinasi mingguan.',
             'status' => 'Completed',
             'created_at' => Carbon::now()->subDays(9),
@@ -231,7 +255,7 @@ class DemoDummySeeder extends Seeder
 
         ProjectAgenda::create([
             'project_id' => $project->id,
-            'created_by' => 2,
+            'created_by' => $managerId,
             'title' => 'Review Mingguan Sprint 1 (Progres API)',
             'description' => 'Rapat rutin mingguan via Zoom untuk memantau progres modul pergudangan.',
             'category' => 'Meeting Online',
@@ -242,7 +266,7 @@ class DemoDummySeeder extends Seeder
             'recurrence' => 'once',
             'location_type' => 'online',
             'meeting_url' => 'https://meet.google.com/abc-defg-hij',
-            'attendee_ids' => [2, 4],
+            'attendee_ids' => [$managerId, $employeeId],
             'status' => 'Scheduled',
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
@@ -251,7 +275,7 @@ class DemoDummySeeder extends Seeder
         // 6. Seed Expenses
         ProjectExpense::create([
             'project_id' => $project->id,
-            'created_by' => 2,
+            'created_by' => $managerId,
             'title' => 'Pembelian Cloud VPS (AWS Lightsail)',
             'category' => 'Infrastruktur & Server',
             'amount' => 1500000.00,
@@ -264,7 +288,7 @@ class DemoDummySeeder extends Seeder
 
         ProjectExpense::create([
             'project_id' => $project->id,
-            'created_by' => 2,
+            'created_by' => $managerId,
             'title' => 'Sewa Co-working Space & Makan Tim',
             'category' => 'Operasional & Konsumsi',
             'amount' => 750000.00,
@@ -278,7 +302,7 @@ class DemoDummySeeder extends Seeder
         // 7. Seed Documents
         ProjectDocument::create([
             'project_id' => $project->id,
-            'created_by' => 2,
+            'created_by' => $managerId,
             'title' => 'SOP & Panduan Standar Kode Git',
             'category' => 'SOP & Panduan Kerja',
             'is_mandatory' => true,
@@ -291,7 +315,7 @@ class DemoDummySeeder extends Seeder
 
         ProjectDocument::create([
             'project_id' => $project->id,
-            'created_by' => 2,
+            'created_by' => $managerId,
             'title' => 'Dokumen Spesifikasi Teknis ERP',
             'category' => 'Spesifikasi Teknis & API',
             'is_mandatory' => false,
@@ -305,7 +329,7 @@ class DemoDummySeeder extends Seeder
         // 8. Seed Activity Logs
         ProjectActivityLog::create([
             'project_id' => $project->id,
-            'user_id' => 2,
+            'user_id' => $managerId,
             'user_name' => 'Demo Manager',
             'user_role' => 'management',
             'action' => 'CREATE',
@@ -318,7 +342,7 @@ class DemoDummySeeder extends Seeder
 
         ProjectActivityLog::create([
             'project_id' => $project->id,
-            'user_id' => 2,
+            'user_id' => $managerId,
             'user_name' => 'Demo Manager',
             'user_role' => 'management',
             'action' => 'CREATE',
