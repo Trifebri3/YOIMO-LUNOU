@@ -127,6 +127,7 @@ class ProjectController extends Controller
             }
         }
         $validated['documents'] = array_values($documents);
+        $validated['team_matrix'] = array_values($request->input('team_matrix', []));
 
         $project = Project::create($validated);
 
@@ -258,6 +259,7 @@ class ProjectController extends Controller
             }
         }
         $validated['documents'] = array_values($documents);
+        $validated['team_matrix'] = array_values($request->input('team_matrix', []));
 
         $project->update($validated);
 

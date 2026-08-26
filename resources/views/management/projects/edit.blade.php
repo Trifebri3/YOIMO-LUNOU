@@ -216,7 +216,7 @@
             </div>
 
             <div id="team-box" class="space-y-3">
-                @foreach($project->team_matrix ?? [] as $idx => $tm)
+                @foreach(array_values($project->team_matrix ?? []) as $idx => $tm)
                     <div class="p-4 bg-slate-50/70 border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row items-center gap-3 team-item">
                         <div class="w-full sm:w-1/2">
                             <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Pilih Anggota</label>
