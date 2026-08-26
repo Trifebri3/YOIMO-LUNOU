@@ -206,9 +206,75 @@
                     </button>
                 </form>
 
+                <!-- Quick Demo Logins (Emoji-Free) -->
+                <div class="mt-6 pt-5 border-t border-slate-100 space-y-3">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block text-center font-sans">Demo One-Click Login (Token-Based)</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <button type="button" onclick="quickDemoLogin('demo_management')" class="px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer font-sans">
+                            Akun Management
+                        </button>
+                        <button type="button" onclick="quickDemoLogin('demo_employee')" class="px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer font-sans">
+                            Akun Karyawan
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
 
+    </div>
+
+    <!-- DEMO INFO MODAL (EMOJI-FREE) -->
+    <div id="demo-info-modal" class="hidden fixed inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] z-50 transition-all duration-300">
+        <div class="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-2xl w-full max-w-sm mx-4 transform transition-all scale-95 duration-300">
+            <div class="space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                        <img src="{{ asset('icon/15.png') }}" class="w-8 h-8 object-contain" alt="LUNOU">
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-black text-slate-850 uppercase tracking-tight">Sesi Eksplorasi Demo</h4>
+                        <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5" id="demo-role-label">Management Role</p>
+                    </div>
+                </div>
+                
+                <p class="text-[11px] text-slate-500 font-semibold leading-relaxed">
+                    Silakan masukkan nama dan instansi Anda untuk memulai eksplorasi workspace. Aktivitas Anda akan di-track dan otomatis terhapus setelah 3 jam.
+                </p>
+                
+                <form method="POST" action="{{ route('demo-login-submit') }}" class="space-y-3.5 pt-2">
+                    @csrf
+                    <input type="hidden" name="token" id="demo-token-input">
+                    
+                    <div class="space-y-1.5">
+                        <label for="demo-name-field" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Nama Lengkap Anda</label>
+                        <input type="text" name="name" id="demo-name-field" required placeholder="Contoh: Andi Wijaya"
+                               class="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-slate-700 font-sans">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="demo-email-field" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Alamat Email Anda</label>
+                        <input type="email" name="email" id="demo-email-field" required placeholder="Contoh: andi@perusahaan.com"
+                               class="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-slate-700 font-sans">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="demo-org-field" class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Instansi / Perusahaan</label>
+                        <input type="text" name="organization" id="demo-org-field" placeholder="Contoh: PT Kreatif Nusantara"
+                               class="w-full px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-slate-700 font-sans">
+                    </div>
+
+                    <div class="flex items-center gap-2 pt-3">
+                        <button type="button" onclick="closeDemoInfoModal()" class="w-1/2 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-500 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                            Batal
+                        </button>
+                        <button type="submit" class="w-1/2 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-750 hover:from-indigo-700 hover:to-indigo-850 text-white text-xs font-black rounded-xl shadow transition-all cursor-pointer">
+                            Mulai Demo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Password visibility toggle script -->
@@ -229,6 +295,25 @@
                 `;
             }
         }
+
+        function quickDemoLogin(token) {
+            document.getElementById('demo-token-input').value = token;
+            document.getElementById('demo-role-label').innerText = token === 'demo_management' ? 'Management Workspace' : 'Employee Workspace';
+            document.getElementById('demo-info-modal').classList.remove('hidden');
+        }
+
+        function closeDemoInfoModal() {
+            document.getElementById('demo-info-modal').classList.add('hidden');
+        }
+
+        // Auto-check query parameter demo_token on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const demoToken = urlParams.get('demo_token');
+            if (demoToken) {
+                quickDemoLogin(demoToken);
+            }
+        });
     </script>
 </body>
 </html>

@@ -673,4 +673,47 @@ public function agendas()
             ], 500);
         }
     }
+
+    /**
+     * Generate atau regenerasi token share klien
+     */
+    public function generateShareToken(Project $project): \Illuminate\Http\RedirectResponse
+    {
+        $project->share_token = \Illuminate\Support\Str::random(32);
+        $project->save();
+        
+        return back()->with('success', 'Link share klien berhasil dibuat/diperbarui.');
+    }
+
+    /**
+     * Nonaktifkan link share klien
+     */
+    public function disableShareToken(Project $project): \Illuminate\Http\RedirectResponse
+    {
+        $project->share_token = null;
+        $project->save();
+        
+        return back()->with('success', 'Link share klien berhasil dinonaktifkan.');
+    }
+
+    /**
+     * Jawab pertanyaan dari klien
+     */
+    public function answerQuestion(Request $request, $questionId): \Illuminate\Http\RedirectResponse
+    {
+        $request->validate([
+            'answer' => 'required|string|max:1000',
+        ]);
+        
+        \Illuminate\Support\Facades\DB::table('project_client_questions')
+            ->where('id', $questionId)
+            ->update([
+                'answer' => trim($request->answer),
+                'answered_by' => \Illuminate\Support\Facades\Auth::id(),
+                'answered_at' => \Carbon\Carbon::now(),
+                'updated_at' => \Carbon\Carbon::now(),
+            ]);
+            
+        return back()->with('success', 'Pertanyaan klien berhasil dijawab.');
+    }
 }

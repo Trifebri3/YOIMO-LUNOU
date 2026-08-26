@@ -72,12 +72,17 @@
     </div>
 
     <!-- MAIN VIEW SWITCHER TABS (Clean and emoji-free) -->
-    <div class="flex border-b border-slate-200">
-        <button onclick="switchDashboardTab('work')" id="dashboard-tab-work-btn" class="px-6 py-3.5 border-b-2 border-indigo-600 text-indigo-750 font-black text-sm transition-all focus:outline-none">
-            Pusat Kerja
-        </button>
-        <button onclick="switchDashboardTab('wellbeing')" id="dashboard-tab-wellbeing-btn" class="px-6 py-3.5 border-b-2 border-transparent text-slate-500 font-bold hover:text-slate-800 text-sm transition-all focus:outline-none flex items-center gap-1.5">
-            Ruang Pemulihan & Refleksi
+    <div class="flex flex-wrap border-b border-slate-200 justify-between items-center pr-2 gap-2">
+        <div class="flex">
+            <button onclick="switchDashboardTab('work')" id="dashboard-tab-work-btn" class="px-6 py-3.5 border-b-2 border-indigo-600 text-indigo-755 font-black text-sm transition-all focus:outline-none cursor-pointer">
+                Pusat Kerja
+            </button>
+            <button onclick="switchDashboardTab('wellbeing')" id="dashboard-tab-wellbeing-btn" class="px-6 py-3.5 border-b-2 border-transparent text-slate-500 font-bold hover:text-slate-800 text-sm transition-all focus:outline-none flex items-center gap-1.5 cursor-pointer">
+                Ruang Pemulihan & Refleksi
+            </button>
+        </div>
+        <button type="button" onclick="startGuidedTour()" id="start-tour-btn" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-750 hover:from-indigo-700 hover:to-indigo-850 text-white text-xs font-black rounded-xl shadow transition-all cursor-pointer flex items-center gap-2">
+            Panduan Demo Interaktif
         </button>
     </div>
 
@@ -404,6 +409,17 @@
                 </button>
                 <button type="button" onclick="switchWellbeingSubTab('gamification')" id="w-tab-gamification-btn" class="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-600 hover:bg-white hover:text-slate-900">
                     Poin & Pencapaian
+                </button>
+                
+                <span class="text-[9px] font-black text-slate-400 tracking-wider uppercase block px-3 py-1 mt-2">RUANG MENTAL BARU</span>
+                <button type="button" onclick="switchWellbeingSubTab('mental-friend')" id="w-tab-mental-friend-btn" class="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-600 hover:bg-white hover:text-slate-900 flex items-center gap-2">
+                    Teman Cerita LUNOU
+                </button>
+                <button type="button" onclick="switchWellbeingSubTab('mental-game')" id="w-tab-mental-game-btn" class="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-600 hover:bg-white hover:text-slate-900 flex items-center gap-2">
+                    Game Ketenangan
+                </button>
+                <button type="button" onclick="switchWellbeingSubTab('mental-reward')" id="w-tab-mental-reward-btn" class="w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-600 hover:bg-white hover:text-slate-900 flex items-center gap-2">
+                    Self-Reward Shop
                 </button>
             </div>
 
@@ -1229,12 +1245,347 @@
                     </div>
                 </div>
 
+                <!-- SUBTAB 9: TEMAN CERITA LUNOU -->
+                <div id="w-section-mental-friend" class="hidden bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+                    <div>
+                        <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight">Teman Cerita LUNOU</h3>
+                        <p class="text-xs text-slate-400 mt-0.5 font-semibold">LUNOU hadir sebagai teman cerita, pendengar curhat, dan pendukung pemulihan mental Anda. Ceritakan apa saja!</p>
+                    </div>
+
+                    <!-- Shortcut prompts cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button type="button" onclick="sendMentalFriendShortcut('Beri saya kata-kata motivasi harian untuk membakar semangat!')" class="p-3.5 bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-150 rounded-2xl text-left transition-all cursor-pointer">
+                            <span class="text-xs font-black text-indigo-700 block">Motivasi Harian</span>
+                            <span class="text-[10px] text-slate-500 font-semibold block mt-1 leading-normal">Dapatkan suntikan semangat positif dari LUNOU.</span>
+                        </button>
+                        <button type="button" onclick="sendMentalFriendShortcut('Beri saya candaan lucu atau lelucon AI yang bisa menghibur hari melelahkan ini!')" class="p-3.5 bg-emerald-50/50 hover:bg-emerald-50 border border-emerald-150 rounded-2xl text-left transition-all cursor-pointer">
+                            <span class="text-xs font-black text-emerald-700 block">Lelucon Lucu AI</span>
+                            <span class="text-[10px] text-slate-500 font-semibold block mt-1 leading-normal">Hiburan humor ringan buatan LUNOU untuk tersenyum.</span>
+                        </button>
+                        <button type="button" onclick="sendMentalFriendShortcut('Aku merasa lelah dan stres hari ini, tolong beri aku kata-kata hangat yang menenangkan pikiran.')" class="p-3.5 bg-amber-50/50 hover:bg-amber-50 border border-amber-150 rounded-2xl text-left transition-all cursor-pointer">
+                            <span class="text-xs font-black text-amber-700 block">Kata-Kata Hangat</span>
+                            <span class="text-[10px] text-slate-500 font-semibold block mt-1 leading-normal">Pesan tulus penyejuk hati yang lelah bekerja.</span>
+                        </button>
+                    </div>
+
+                    <!-- Chat Box Container -->
+                    <div class="border border-slate-100 rounded-3xl p-5 bg-slate-50/30 space-y-4">
+                        <div id="mental-friend-chat-feed" class="h-64 overflow-y-auto space-y-3 bg-white border border-slate-100 rounded-2xl p-4 shadow-inner">
+                            <div class="flex items-start gap-2">
+                                <img src="/icon/11.png" alt="LUNOU" class="w-6 h-6 object-contain shrink-0 mt-0.5">
+                                <div class="max-w-[85%] bg-slate-50 border border-slate-100 rounded-2xl rounded-tl-none p-3 shadow-xs">
+                                    <p class="text-[11px] text-slate-700 leading-relaxed font-semibold">Halo Sahabat! Aku LUNOU, teman cerita dan pemulihan mentalmu. Bagikan perasaanmu, kekhawatiranmu, atau tantangan yang sedang kamu hadapi hari ini. Aku di sini untuk mendengarkan tanpa menghakimi.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat inputs -->
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="mental-friend-chat-input" placeholder="Tulis ceritamu di sini..." onkeypress="if(event.key === 'Enter') sendMentalFriendMessage();" class="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                            <button type="button" onclick="sendMentalFriendMessage()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer">Kirim</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUBTAB 10: GAME KETENANGAN -->
+                <div id="w-section-mental-game" class="hidden bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight">Ruang Game & Asah Otak</h3>
+                            <p class="text-xs text-slate-400 mt-0.5 font-semibold">Mainkan game ketenangan dan kuis logika untuk melepas stres serta menyegarkan pikiran.</p>
+                        </div>
+                    </div>
+
+                    <!-- Inner game navigation -->
+                    <div class="flex flex-wrap border-b border-slate-200 gap-4 text-xs font-bold text-slate-500 pb-1">
+                        <button type="button" onclick="switchInnerGame('balloon')" id="inner-game-balloon-btn" class="pb-2 border-b-2 border-indigo-600 text-indigo-700 font-black cursor-pointer">
+                            Zen Balloon Popper
+                        </button>
+                        <button type="button" onclick="switchInnerGame('sudoku')" id="inner-game-sudoku-btn" class="pb-2 border-b-2 border-transparent hover:text-slate-800 cursor-pointer">
+                            Zen Sudoku 9x9
+                        </button>
+                        <button type="button" onclick="switchInnerGame('logic')" id="inner-game-logic-btn" class="pb-2 border-b-2 border-transparent hover:text-slate-800 cursor-pointer">
+                            Logic Quiz Hub
+                        </button>
+                        <button type="button" onclick="switchInnerGame('chess')" id="inner-game-chess-btn" class="pb-2 border-b-2 border-transparent hover:text-slate-800 cursor-pointer">
+                            LUNOU Chess
+                        </button>
+                        <button type="button" onclick="switchInnerGame('strategy')" id="inner-game-strategy-btn" class="pb-2 border-b-2 border-transparent hover:text-slate-800 cursor-pointer">
+                            2048 Strategy
+                        </button>
+                    </div>
+
+                    <!-- GAME 1: Balloon Popper -->
+                    <div id="inner-game-balloon" class="space-y-4">
+                        <div class="p-6 bg-gradient-to-br from-indigo-950 to-slate-900 border border-indigo-900 rounded-3xl text-center space-y-6 relative overflow-hidden h-[360px] flex flex-col justify-between select-none">
+                            <div class="flex items-center justify-between text-white border-b border-white/10 pb-3 z-10">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-indigo-300">Stress Relieved</span>
+                                <span id="zen-points-display" class="px-3 py-1 bg-white/10 border border-white/20 rounded-lg text-xs font-black text-emerald-400">+0 XP</span>
+                            </div>
+                            <div id="balloon-arena" class="relative flex-1 w-full overflow-hidden">
+                                <div class="absolute inset-0 flex items-center justify-center" id="game-start-layer">
+                                    <button type="button" onclick="startZenGame()" class="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-black rounded-2xl shadow-lg hover:from-emerald-600 hover:to-teal-600 transition-all cursor-pointer">
+                                        Mulai Game Ketenangan
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="text-[10px] text-indigo-200/60 font-semibold z-10">
+                                Setiap balon yang dipecahkan menyimulasikan pelepasan hormon kortisol stres di otak.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GAME 2: Zen Sudoku -->
+                    <div id="inner-game-sudoku" class="hidden space-y-4">
+                        <div class="p-6 bg-slate-50 border border-slate-200/60 rounded-3xl flex flex-col items-center justify-between gap-6">
+                            <!-- Header info -->
+                            <div class="text-center space-y-2">
+                                <span class="text-[9px] font-black text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded uppercase tracking-wider block mx-auto w-max">Fokus & Logika</span>
+                                <h4 class="text-sm font-black text-slate-850 uppercase">Zen Sudoku 9x9</h4>
+                                <p class="text-xs text-slate-500 max-w-xl font-semibold leading-relaxed">Isi setiap baris, kolom, dan blok 3x3 dengan angka 1-9 tanpa pengulangan. Selesaikan papan Sudoku ini dengan benar untuk mendapatkan +20 XP!</p>
+                                <button type="button" onclick="generateSudokuBoard()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer">Buat Papan Baru</button>
+                            </div>
+
+                            <!-- Sudoku 9x9 grid -->
+                            <div class="flex flex-col items-center gap-3">
+                                <div id="sudoku-grid-container" class="grid grid-cols-9 gap-0.5 p-2 bg-white border border-slate-200 rounded-2xl shadow-sm w-max">
+                                    <!-- Dynamic 9x9 inputs -->
+                                </div>
+                                <div class="flex items-center gap-2 mt-2 w-full justify-center">
+                                    <button type="button" onclick="verifySudoku()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer">Verifikasi Jawaban</button>
+                                </div>
+                                <div id="sudoku-feedback-msg" class="text-xs font-bold text-center hidden"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GAME 3: Logic Quiz Hub -->
+                    <div id="inner-game-logic" class="hidden space-y-4">
+                        <div class="p-6 bg-slate-50 border border-slate-200/60 rounded-3xl space-y-5">
+                            <div class="flex items-center justify-between border-b border-slate-200/60 pb-3">
+                                <div class="space-y-0.5">
+                                    <h4 class="text-xs font-black text-slate-850 uppercase">Logic Quiz Hub</h4>
+                                    <p class="text-[10px] text-slate-400 font-semibold">Tebak jawaban yang benar dari teka-teki logika LUNOU AI untuk mendapatkan +15 XP!</p>
+                                </div>
+                                <button type="button" onclick="generateLogicQuiz()" id="logic-quiz-reload-btn" class="px-3.5 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-xl shadow cursor-pointer font-sans">
+                                    Ambil Teka-Teki Logika
+                                </button>
+                            </div>
+
+                            <!-- Quiz Content Area -->
+                            <div id="logic-quiz-body" class="space-y-4 hidden">
+                                <div class="p-4 bg-white border border-slate-150 rounded-2xl">
+                                    <p id="logic-quiz-question" class="text-xs text-slate-800 font-black leading-relaxed"></p>
+                                </div>
+
+                                <!-- Multiple choice options -->
+                                <div id="logic-quiz-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <!-- Dynamic option buttons -->
+                                </div>
+
+                                <!-- Result feedback & explanation -->
+                                <div id="logic-quiz-result-panel" class="p-4 rounded-2xl hidden space-y-2">
+                                    <span id="logic-quiz-status-title" class="text-xs font-black uppercase block"></span>
+                                    <p id="logic-quiz-explanation" class="text-xs text-slate-650 font-semibold leading-relaxed"></p>
+                                </div>
+                            </div>
+
+                            <!-- Initial loader card -->
+                            <div id="logic-quiz-initial-msg" class="p-8 border border-dashed border-slate-200 bg-white/50 rounded-2xl text-center text-xs text-slate-400 italic">
+                                Klik tombol di atas untuk meminta LUNOU AI merancang soal teka-teki logika untuk Anda.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GAME 4: Chess Game -->
+                    <div id="inner-game-chess" class="hidden space-y-4">
+                        <div class="p-6 bg-slate-50 border border-slate-200/60 rounded-3xl flex flex-col lg:flex-row gap-6 justify-between items-center">
+                            <!-- Chess board description -->
+                            <div class="space-y-4 max-w-sm">
+                                <span class="text-[9px] font-black text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded uppercase tracking-wider block w-max">Taktik & Strategi</span>
+                                <h4 class="text-sm font-black text-slate-850 uppercase">LUNOU Chess</h4>
+                                <p class="text-xs text-slate-500 leading-relaxed font-semibold">Tantang LUNOU AI dalam permainan catur taktis. Anda memainkan bidak Putih (Light Indigo), dan AI memainkan bidak Hitam (Slate). Kalahkan AI dengan menangkap King lawan untuk memenangkan +30 XP!</p>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" onclick="initializeChessGame()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer">Mulai Ulang Catur</button>
+                                </div>
+                                <div id="chess-status-msg" class="text-xs font-bold text-indigo-650 bg-indigo-50/50 p-3 border border-indigo-100 rounded-xl">Klik 'Mulai Ulang Catur' untuk memulai!</div>
+                            </div>
+
+                            <!-- Chess Board Grid -->
+                            <div class="flex flex-col items-center">
+                                <div id="chess-board-grid" class="grid grid-cols-8 gap-0.5 bg-slate-200 border-2 border-slate-300 p-1.5 rounded-2xl w-max">
+                                    <!-- Dynamic 8x8 squares -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GAME 5: 2048 Strategy Game -->
+                    <div id="inner-game-strategy" class="hidden space-y-4">
+                        <div class="p-6 bg-slate-50 border border-slate-200/60 rounded-3xl flex flex-col md:flex-row gap-6 justify-between items-center">
+                            <!-- Strategy description -->
+                            <div class="space-y-4 max-w-sm">
+                                <span class="text-[9px] font-black text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded uppercase tracking-wider block w-max">Slide & Merge</span>
+                                <h4 class="text-sm font-black text-slate-850 uppercase">2048 Brain Strategy</h4>
+                                <p class="text-xs text-slate-500 leading-relaxed font-semibold">Gabungkan angka-angka yang sama dengan menggeser kotak (ke atas, bawah, kiri, kanan). Capai ubin 512, 1024, atau 2048 untuk memenangkan poin XP tambahan!</p>
+                                <div class="flex items-center justify-between gap-4 bg-white border border-slate-150 p-3 rounded-2xl">
+                                    <div class="text-left">
+                                        <span class="text-[9px] text-slate-400 font-bold uppercase block">Skor</span>
+                                        <span id="game-2048-score" class="text-sm font-black text-indigo-700">0</span>
+                                    </div>
+                                    <button type="button" onclick="initialize2048Game()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow transition-all cursor-pointer">Mulai Baru</button>
+                                </div>
+                                <div id="game-2048-feedback" class="text-xs font-bold text-center text-emerald-600 hidden"></div>
+                            </div>
+
+                            <!-- 2048 Board Grid -->
+                            <div class="flex flex-col items-center gap-4">
+                                <div id="game-2048-board" class="grid grid-cols-4 gap-2.5 p-3.5 bg-slate-350 rounded-2xl w-64 h-64 relative shadow-inner">
+                                    <!-- Dynamic 4x4 tiles -->
+                                </div>
+
+                                <!-- On-screen controls -->
+                                <div class="grid grid-cols-3 gap-2 w-max select-none">
+                                    <div></div>
+                                    <button type="button" onclick="move2048('up')" class="px-3.5 py-2.5 bg-white hover:bg-slate-55 border border-slate-200 shadow-sm rounded-xl text-xs font-black cursor-pointer">UP</button>
+                                    <div></div>
+                                    <button type="button" onclick="move2048('left')" class="px-3.5 py-2.5 bg-white hover:bg-slate-55 border border-slate-200 shadow-sm rounded-xl text-xs font-black cursor-pointer">LEFT</button>
+                                    <button type="button" onclick="move2048('down')" class="px-3.5 py-2.5 bg-white hover:bg-slate-55 border border-slate-200 shadow-sm rounded-xl text-xs font-black cursor-pointer">DOWN</button>
+                                    <button type="button" onclick="move2048('right')" class="px-3.5 py-2.5 bg-white hover:bg-slate-55 border border-slate-200 shadow-sm rounded-xl text-xs font-black cursor-pointer">RIGHT</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUBTAB 11: SELF-REWARD SHOP -->
+                <div id="w-section-mental-reward" class="hidden bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight">Self-Reward Shop</h3>
+                            <p class="text-xs text-slate-400 mt-0.5 font-semibold">Tukarkan Poin Produktivitas (XP) Anda dengan hadiah kecil sebagai bentuk penghargaan atas kerja keras Anda.</p>
+                        </div>
+                        <div class="px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-center gap-2">
+                            <span class="text-[10px] font-bold text-slate-500">Saldo XP Anda:</span>
+                            <span id="reward-xp-balance" class="text-xs font-black text-indigo-700">{{ $userPoint->total_points }} XP</span>
+                        </div>
+                    </div>
+
+                    <!-- Catalog Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        
+                        <!-- Reward 1 -->
+                        <div class="p-5 bg-slate-50 border border-slate-200/60 rounded-3xl flex flex-col justify-between gap-4 hover:shadow-md transition-all">
+                            <div class="space-y-2">
+                                <span class="text-[9px] font-black text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded uppercase tracking-wider block w-max">Minuman</span>
+                                <h4 class="text-xs font-black text-slate-850 uppercase">Kopi Susu Senja</h4>
+                                <p class="text-[10px] text-slate-400 font-semibold leading-normal">Tarik napas dan nikmati secangkir kopi susu dingin di sore hari.</p>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                <span class="text-xs font-black text-slate-700">30 XP</span>
+                                <button type="button" onclick="claimSelfReward('Kopi Susu Senja', 30)" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-xl shadow transition-all cursor-pointer">Klaim</button>
+                            </div>
+                        </div>
+
+                        <!-- Reward 2 -->
+                        <div class="p-5 bg-slate-50 border border-slate-200/60 rounded-3xl flex flex-col justify-between gap-4 hover:shadow-md transition-all">
+                            <div class="space-y-2">
+                                <span class="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded uppercase tracking-wider block w-max">Istirahat</span>
+                                <h4 class="text-xs font-black text-slate-850 uppercase">Tidur Siang 20 Menit</h4>
+                                <p class="text-[10px] text-slate-400 font-semibold leading-normal">Jauhkan mata dari layar laptop dan istirahatkan pikiran sejenak.</p>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                <span class="text-xs font-black text-slate-700">50 XP</span>
+                                <button type="button" onclick="claimSelfReward('Tidur Siang 20 Menit', 50)" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-xl shadow transition-all cursor-pointer">Klaim</button>
+                            </div>
+                        </div>
+
+                        <!-- Reward 3 -->
+                        <div class="p-5 bg-slate-50 border border-slate-200/60 rounded-3xl flex flex-col justify-between gap-4 hover:shadow-md transition-all">
+                            <div class="space-y-2">
+                                <span class="text-[9px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded uppercase tracking-wider block w-max">Camilan</span>
+                                <h4 class="text-xs font-black text-slate-850 uppercase">Es Krim Matcha</h4>
+                                <p class="text-[10px] text-slate-400 font-semibold leading-normal">Beri dirimu asupan es krim dingin manis yang memanjakan lidah.</p>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                <span class="text-xs font-black text-slate-700">40 XP</span>
+                                <button type="button" onclick="claimSelfReward('Es Krim Matcha', 40)" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-xl shadow transition-all cursor-pointer">Klaim</button>
+                            </div>
+                        </div>
+
+                        <!-- Reward 4 -->
+                        <div class="p-5 bg-slate-50 border border-slate-200/60 rounded-3xl flex flex-col justify-between gap-4 hover:shadow-md transition-all">
+                            <div class="space-y-2">
+                                <span class="text-[9px] font-black text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded uppercase tracking-wider block w-max">Aktivitas</span>
+                                <h4 class="text-xs font-black text-slate-850 uppercase">Jalan Sore Bebas Laptop</h4>
+                                <p class="text-[10px] text-slate-400 font-semibold leading-normal">Hirup udara segar di sekitar area rumah tanpa memikirkan push code.</p>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                <span class="text-xs font-black text-slate-700">60 XP</span>
+                                <button type="button" onclick="claimSelfReward('Jalan Sore Bebas Laptop', 60)" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-xl shadow transition-all cursor-pointer">Klaim</button>
+                            </div>
+                        </div>
+
+                        <!-- Reward 5 -->
+                        <div class="p-5 bg-slate-50 border border-slate-200/60 rounded-3xl flex flex-col justify-between gap-4 hover:shadow-md transition-all">
+                            <div class="space-y-2">
+                                <span class="text-[9px] font-black text-purple-700 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded uppercase tracking-wider block w-max">Hiburan</span>
+                                <h4 class="text-xs font-black text-slate-850 uppercase">YouTube 30 Menit</h4>
+                                <p class="text-[10px] text-slate-400 font-semibold leading-normal">Tonton video vlog, klip musik, atau review teknologi favorit Anda.</p>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                <span class="text-xs font-black text-slate-700">35 XP</span>
+                                <button type="button" onclick="claimSelfReward('YouTube 30 Menit', 35)" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-xl shadow transition-all cursor-pointer">Klaim</button>
+                            </div>
+                        </div>
+
+                        <!-- Reward 6 -->
+                        <div class="p-5 bg-slate-50 border border-slate-200/60 rounded-3xl flex flex-col justify-between gap-4 hover:shadow-md transition-all">
+                            <div class="space-y-2">
+                                <span class="text-[9px] font-black text-rose-700 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded uppercase tracking-wider block w-max">Makanan</span>
+                                <h4 class="text-xs font-black text-slate-850 uppercase">1 Loyang Pizza Lezat</h4>
+                                <p class="text-[10px] text-slate-400 font-semibold leading-normal">Hadiah besar setelah berhasil menuntaskan sprint besar minggu ini.</p>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                                <span class="text-xs font-black text-slate-700">120 XP</span>
+                                <button type="button" onclick="claimSelfReward('1 Loyang Pizza Lezat', 120)" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-xl shadow transition-all cursor-pointer">Klaim</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
 
         </div>
 
     </div>
 
+    <!-- INTERACTIVE GUIDED TOUR CONTAINER -->
+    <div id="guided-tour-overlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-[2px] transition-all duration-300 pointer-events-auto" style="z-index: 9999;"></div>
+    <div id="guided-tour-tooltip" class="hidden absolute bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xl w-[290px] transition-all duration-300" style="z-index: 10000;">
+        <div class="space-y-3 font-sans">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h5 class="text-xs font-black text-indigo-700 uppercase tracking-wider">Panduan Demo LUNOU</h5>
+                <span id="guided-tour-step-indicator" class="text-[9px] bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md font-bold text-indigo-700">1 / 6</span>
+            </div>
+            <p id="guided-tour-text" class="text-[11px] text-slate-600 leading-relaxed font-semibold"></p>
+            <div class="flex justify-between items-center pt-2">
+                <button type="button" onclick="endGuidedTour()" class="text-[10px] text-slate-400 hover:text-slate-600 font-bold transition-all cursor-pointer">Lewati</button>
+                <button type="button" onclick="nextGuidedTourStep()" id="guided-tour-next-btn" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold rounded-xl shadow-sm transition-all cursor-pointer">Lanjut</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .tour-highlight {
+            position: relative !important;
+            z-index: 10001 !important;
+            box-shadow: 0 0 0 8px rgba(79, 70, 229, 0.45), 0 20px 25px -5px rgba(0, 0, 0, 0.15) !important;
+            background-color: white !important;
+            pointer-events: auto !important;
+        }
+    </style>
 </div>
 
 @push('scripts')
@@ -1264,7 +1615,7 @@
     }
 
     // 2. Switch Subtab didalam Wellbeing
-    const wellbeingSubTabs = ['today', 'auto-journal', 'journal', 'recovery', 'goals', 'reflection', 'leave', 'balance', 'gamification'];
+    const wellbeingSubTabs = ['today', 'auto-journal', 'journal', 'recovery', 'goals', 'reflection', 'leave', 'balance', 'gamification', 'mental-friend', 'mental-game', 'mental-reward'];
 
     function switchWellbeingSubTab(activeSub) {
         wellbeingSubTabs.forEach(t => {
@@ -2051,6 +2402,1037 @@
         playHappyChime();
         switchDashboardTab('wellbeing');
         switchWellbeingSubTab('today');
+    }
+
+    // --- RUANG MENTAL BARU SCRIPTS ---
+
+    // 1. Teman Cerita LUNOU
+    function sendMentalFriendShortcut(promptText) {
+        document.getElementById('mental-friend-chat-input').value = promptText;
+        sendMentalFriendMessage();
+    }
+
+    function sendMentalFriendMessage() {
+        const input = document.getElementById('mental-friend-chat-input');
+        const queryText = input.value.trim();
+        if (!queryText) return;
+
+        input.value = '';
+
+        // Append user bubble to chat feed
+        const feed = document.getElementById('mental-friend-chat-feed');
+        feed.insertAdjacentHTML('beforeend', `
+            <div class="flex items-start gap-2 justify-end">
+                <div class="max-w-[85%] bg-indigo-600 text-white rounded-2xl rounded-tr-none p-3 shadow-xs">
+                    <p class="text-[11px] leading-relaxed font-semibold">${escapeHtml(queryText)}</p>
+                </div>
+            </div>
+        `);
+        feed.scrollTop = feed.scrollHeight;
+
+        // Append thinking bubble
+        const thinkingId = 'thinking-mental-' + Date.now();
+        feed.insertAdjacentHTML('beforeend', `
+            <div id="${thinkingId}" class="flex items-start gap-2 justify-start">
+                <img src="/icon/15.png" alt="LUNOU" class="w-6 h-6 object-contain shrink-0 mt-0.5 animate-bounce">
+                <div class="max-w-[85%] bg-white border border-slate-100 rounded-2xl rounded-tl-none p-3 shadow-xs">
+                    <p class="text-[11px] text-slate-400 leading-relaxed font-semibold italic">LUNOU sedang menyimak...</p>
+                </div>
+            </div>
+        `);
+        feed.scrollTop = feed.scrollHeight;
+
+        // Send query via discuss route (reusing wellbeing counseling endpoint)
+        fetch('{{ route("user.wellbeing.discuss") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ message: queryText })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Connection failed");
+            return res.json();
+        })
+        .then(data => {
+            document.getElementById(thinkingId).remove();
+            if (data.success) {
+                // Support rich formatting or warm expressions
+                feed.insertAdjacentHTML('beforeend', `
+                    <div class="flex items-start gap-2 justify-start">
+                        <img src="/icon/5.png" alt="LUNOU" class="w-6 h-6 object-contain shrink-0 mt-0.5">
+                        <div class="max-w-[85%] bg-white border border-slate-100 rounded-2xl rounded-tl-none p-3 shadow-xs">
+                            <p class="text-[11px] text-slate-700 leading-relaxed font-semibold">${data.reply.replace(/\n/g, '<br>')}</p>
+                        </div>
+                    </div>
+                `);
+                playHappyChime();
+            } else {
+                feed.insertAdjacentHTML('beforeend', `
+                    <div class="flex items-start gap-2 justify-start">
+                        <img src="/icon/18.png" alt="LUNOU" class="w-6 h-6 object-contain shrink-0 mt-0.5">
+                        <div class="max-w-[85%] bg-rose-50 border border-rose-100 rounded-2xl rounded-tl-none p-3 shadow-xs">
+                            <p class="text-[11px] text-rose-600 leading-relaxed font-semibold">Maaf Sahabat, LUNOU sedang mencerna kata-kata Anda. Coba tuliskan lagi.</p>
+                        </div>
+                    </div>
+                `);
+            }
+            feed.scrollTop = feed.scrollHeight;
+        })
+        .catch(err => {
+            document.getElementById(thinkingId).remove();
+            feed.insertAdjacentHTML('beforeend', `
+                <div class="flex items-start gap-2 justify-start">
+                    <img src="/icon/18.png" alt="LUNOU" class="w-6 h-6 object-contain shrink-0 mt-0.5">
+                    <div class="max-w-[85%] bg-rose-50 border border-rose-100 rounded-2xl rounded-tl-none p-3 shadow-xs">
+                        <p class="text-[11px] text-rose-600 leading-relaxed font-semibold">Koneksi terputus sejenak. LUNOU tetap bersamamu.</p>
+                    </div>
+                </div>
+            `);
+            feed.scrollTop = feed.scrollHeight;
+        });
+    }
+
+    // 2. Game Ketenangan: Zen Balloon Popper
+    let zenPoints = 0;
+    let gameInterval = null;
+
+    function startZenGame() {
+        // Remove start button
+        document.getElementById('game-start-layer').remove();
+
+        zenPoints = 0;
+        document.getElementById('zen-points-display').innerText = `+${zenPoints} XP`;
+
+        // Start spawning balloons
+        gameInterval = setInterval(spawnBalloon, 1200);
+        spawnBalloon();
+    }
+
+    function spawnBalloon() {
+        const arena = document.getElementById('balloon-arena');
+        if (!arena) return;
+
+        const words = ['Burnout', 'Deadline', 'Overwork', 'Rasa Cemas', 'Stres Kerja', 'Multitasking', 'Lelah Fisik', 'Kurang Istirahat'];
+        const word = words[Math.floor(Math.random() * words.length)];
+
+        const colors = [
+            'from-rose-400 to-rose-600 border-rose-300',
+            'from-amber-400 to-amber-600 border-amber-300',
+            'from-indigo-400 to-indigo-600 border-indigo-300',
+            'from-purple-400 to-purple-600 border-purple-300',
+            'from-sky-400 to-sky-600 border-sky-300'
+        ];
+        const colorClass = colors[Math.floor(Math.random() * colors.length)];
+
+        const balloon = document.createElement('div');
+        balloon.className = `absolute px-4 py-2 bg-gradient-to-t ${colorClass} border text-white text-[10px] font-black rounded-full shadow-lg cursor-pointer transition-all duration-300 transform scale-90 hover:scale-110 flex flex-col items-center justify-center select-none`;
+        
+        // Random horizontal pos
+        const width = arena.clientWidth - 100;
+        const left = Math.max(10, Math.floor(Math.random() * width));
+        balloon.style.left = `${left}px`;
+        balloon.style.bottom = `-50px`;
+
+        // Label string
+        balloon.innerHTML = `<span class="mt-0.5 tracking-tight uppercase">${word}</span>`;
+
+        // Let's bind click to pop
+        balloon.onclick = function() {
+            popBalloon(balloon);
+        };
+
+        arena.appendChild(balloon);
+
+        // Float up animation
+        let bottom = -50;
+        const interval = setInterval(() => {
+            bottom += 2.5;
+            balloon.style.bottom = `${bottom}px`;
+
+            if (bottom > arena.clientHeight + 60) {
+                clearInterval(interval);
+                balloon.remove();
+            }
+        }, 30);
+
+        balloon.dataset.floatInterval = interval;
+    }
+
+    function popBalloon(balloon) {
+        clearInterval(balloon.dataset.floatInterval);
+
+        // Sound effect (Web Audio Synthesizer Pop sound)
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            // Pop sound: short sine wave sweeps down quickly
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            
+            osc.start();
+            osc.stop(ctx.currentTime + 0.1);
+        } catch(e) {}
+
+        // Visual Popping animation
+        balloon.innerHTML = 'POP!';
+        balloon.className = 'absolute px-4 py-2 bg-transparent text-emerald-400 text-xs font-black select-none pointer-events-none transform scale-125 transition-all duration-200';
+        
+        setTimeout(() => {
+            balloon.remove();
+        }, 200);
+
+        // Update points
+        zenPoints += 5;
+        document.getElementById('zen-points-display').innerText = `+${zenPoints} XP`;
+        playHappyChime();
+    }
+
+    // 3. Self-Reward Shop
+    let currentXpBalance = parseInt('{{ $userPoint->total_points }}');
+
+    function claimSelfReward(rewardName, cost) {
+        if (currentXpBalance < cost) {
+            alert(`Saldo XP Anda tidak mencukupi! Anda butuh ${cost} XP untuk mengklaim "${rewardName}". Tetap semangat bekerja dan check-in untuk menambah poin!`);
+            return;
+        }
+
+        const confirmClaim = confirm(`Apakah Anda yakin ingin menukarkan ${cost} XP untuk hadiah "${rewardName}"?`);
+        if (!confirmClaim) return;
+
+        // Call AJAX to deduct points in database (using award-points with negative cost)
+        fetch('{{ route("user.wellbeing.award-points") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ points: -cost, description: `Mengklaim reward: ${rewardName}` })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Deduct points locally with visual feedback
+                currentXpBalance = data.total_points;
+                document.getElementById('reward-xp-balance').innerText = `${currentXpBalance} XP`;
+                
+                // Update gamification points display if exists
+                const gamificationBalance = document.querySelector('#w-section-gamification .text-2xl.font-black.text-slate-800');
+                if (gamificationBalance) {
+                    gamificationBalance.innerText = `${currentXpBalance} XP`;
+                }
+
+                // play happy chime
+                playHappyChime();
+
+                alert(`Selamat! Reward "${rewardName}" berhasil diklaim. Silakan nikmati waktu istirahat sejenak untuk memulihkan energi Anda. Kerja bagus!`);
+            } else {
+                alert("Gagal menukarkan poin: " + data.message);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Terjadi gangguan jaringan, gagal menukarkan poin.");
+        });
+    }
+
+    // --- INNER GAME NAVIGATION & GAMEPLAY SCRIPTS ---
+
+    function switchInnerGame(game) {
+        const games = ['balloon', 'sudoku', 'logic', 'chess', 'strategy'];
+        games.forEach(g => {
+            const section = document.getElementById(`inner-game-${g}`);
+            const btn = document.getElementById(`inner-game-${g}-btn`);
+
+            if (g === game) {
+                section.classList.remove('hidden');
+                btn.className = "pb-2 border-b-2 border-indigo-600 text-indigo-700 font-black cursor-pointer";
+                if (g === 'sudoku' && !sudokuSolution) {
+                    generateSudokuBoard();
+                } else if (g === 'chess' && chessBoardState.length === 0) {
+                    initializeChessGame();
+                } else if (g === 'strategy' && board2048.length === 0) {
+                    initialize2048Game();
+                }
+            } else {
+                section.classList.add('hidden');
+                btn.className = "pb-2 border-b-2 border-transparent hover:text-slate-800 cursor-pointer";
+            }
+        });
+    }
+
+    // --- SUDOKU 9x9 GAME CODE ---
+    let sudokuSolution = null;
+    let sudokuBoard = null;
+
+    function generateSudokuBoard() {
+        let base = [
+            [5, 3, 4, 6, 7, 8, 9, 1, 2],
+            [6, 7, 2, 1, 9, 5, 3, 4, 8],
+            [1, 9, 8, 3, 4, 2, 5, 6, 7],
+            [8, 5, 9, 7, 6, 1, 4, 2, 3],
+            [4, 2, 6, 8, 5, 3, 7, 9, 1],
+            [7, 1, 3, 9, 2, 4, 8, 5, 6],
+            [9, 6, 1, 5, 3, 7, 2, 8, 4],
+            [2, 8, 7, 4, 1, 9, 6, 3, 5],
+            [3, 4, 5, 2, 8, 6, 1, 7, 9]
+        ];
+
+        // Shuffle numbers mapping to create variety
+        let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        for (let i = numbers.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+        }
+        
+        let solution = base.map(row => row.map(val => numbers[val - 1]));
+        sudokuSolution = solution;
+
+        // Clear 35 cells for gameplay
+        sudokuBoard = solution.map(row => [...row]);
+        let cellsToClear = 35;
+        while (cellsToClear > 0) {
+            let r = Math.floor(Math.random() * 9);
+            let c = Math.floor(Math.random() * 9);
+            if (sudokuBoard[r][c] !== 0) {
+                sudokuBoard[r][c] = 0;
+                cellsToClear--;
+            }
+        }
+
+        const container = document.getElementById('sudoku-grid-container');
+        container.innerHTML = '';
+
+        for (let r = 0; r < 9; r++) {
+            for (let c = 0; c < 9; c++) {
+                const val = sudokuBoard[r][c];
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.maxLength = '1';
+                input.className = 'w-8 h-8 text-center text-xs font-black border border-slate-200 outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-sans';
+                
+                // Add thicker inner lines for 3x3 block boundaries
+                if (r === 2 || r === 5) input.className += ' border-b-2 border-b-slate-400';
+                if (r === 8) input.className += ' border-b-0';
+                if (c === 2 || c === 5) input.className += ' border-r-2 border-r-slate-400';
+                if (c === 8) input.className += ' border-r-0';
+
+                // Add rounded corners for outer boundary squares
+                if (r === 0 && c === 0) input.className += ' rounded-tl-xl';
+                if (r === 0 && c === 8) input.className += ' rounded-tr-xl';
+                if (r === 8 && c === 0) input.className += ' rounded-bl-xl';
+                if (r === 8 && c === 8) input.className += ' rounded-br-xl';
+
+                if (val !== 0) {
+                    input.value = val;
+                    input.disabled = true;
+                    input.classList.add('bg-slate-100', 'text-slate-800');
+                } else {
+                    input.value = '';
+                    input.classList.add('bg-indigo-50/20', 'text-indigo-650');
+                    input.dataset.row = r;
+                    input.dataset.col = c;
+                }
+                container.appendChild(input);
+            }
+        }
+
+        const msg = document.getElementById('sudoku-feedback-msg');
+        msg.classList.add('hidden');
+    }
+
+    function verifySudoku() {
+        if (!sudokuSolution) return;
+
+        const container = document.getElementById('sudoku-grid-container');
+        const inputs = container.querySelectorAll('input:not([disabled])');
+        let isCorrect = true;
+
+        inputs.forEach(input => {
+            const r = parseInt(input.dataset.row);
+            const c = parseInt(input.dataset.col);
+            const val = parseInt(input.value.trim());
+
+            if (isNaN(val) || val !== sudokuSolution[r][c]) {
+                isCorrect = false;
+                input.classList.add('border-rose-500', 'bg-rose-50');
+            } else {
+                input.classList.remove('border-rose-500', 'bg-rose-50');
+            }
+        });
+
+        const msg = document.getElementById('sudoku-feedback-msg');
+        msg.classList.remove('hidden');
+
+        if (isCorrect) {
+            msg.innerText = 'Jawaban Benar! Anda mendapatkan +20 XP!';
+            msg.className = 'text-xs font-bold text-center text-emerald-600 mt-2 font-sans';
+            
+            // Call AJAX to award points in database
+            saveGamePointsToDatabase(20, 'Menyelesaikan Zen Sudoku');
+        } else {
+            msg.innerText = 'Ada kotak yang masih kosong atau terisi angka salah. Coba teliti kembali!';
+            msg.className = 'text-xs font-bold text-center text-rose-600 mt-2 font-sans';
+        }
+    }
+
+    function saveGamePointsToDatabase(points, description) {
+        fetch('{{ route("user.wellbeing.award-points") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ points: points, description: description })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Update local balances
+                currentXpBalance = data.total_points;
+                document.getElementById('reward-xp-balance').innerText = `${currentXpBalance} XP`;
+                
+                const gamificationBalance = document.querySelector('#w-section-gamification .text-2xl.font-black.text-slate-800');
+                if (gamificationBalance) {
+                    gamificationBalance.innerText = `${currentXpBalance} XP`;
+                }
+
+                // Play sound
+                playHappyChime();
+            }
+        })
+        .catch(err => console.error("Gagal mencatat poin:", err));
+    }
+
+    // --- LOGIC QUIZ CODE ---
+    let currentQuizAnswer = null;
+
+    function generateLogicQuiz() {
+        const reloadBtn = document.getElementById('logic-quiz-reload-btn');
+        const initialMsg = document.getElementById('logic-quiz-initial-msg');
+        const quizBody = document.getElementById('logic-quiz-body');
+        const questionEl = document.getElementById('logic-quiz-question');
+        const optionsEl = document.getElementById('logic-quiz-options');
+        const resultPanel = document.getElementById('logic-quiz-result-panel');
+
+        reloadBtn.disabled = true;
+        reloadBtn.innerText = 'Menyusun...';
+        resultPanel.classList.add('hidden');
+
+        fetch('{{ route("user.wellbeing.generate-logic-quiz") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            reloadBtn.disabled = false;
+            reloadBtn.innerText = 'Ambil Teka-Teki Logika';
+
+            if (data.success) {
+                const q = data.quiz;
+                currentQuizAnswer = q.answerIndex;
+
+                initialMsg.classList.add('hidden');
+                quizBody.classList.remove('hidden');
+
+                questionEl.innerText = q.question;
+                optionsEl.innerHTML = '';
+
+                q.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'p-3 bg-white border border-slate-200 hover:border-indigo-500 rounded-xl text-xs font-bold transition-all text-slate-700 text-left hover:bg-indigo-50/10 cursor-pointer font-sans';
+                    btn.innerText = opt;
+                    btn.onclick = () => submitLogicQuizAnswer(idx, q.explanation);
+                    optionsEl.appendChild(btn);
+                });
+            } else {
+                alert("Gagal merancang teka-teki logika.");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            reloadBtn.disabled = false;
+            reloadBtn.innerText = 'Ambil Teka-Teki Logika';
+            alert("Kesalahan jaringan.");
+        });
+    }
+
+    function submitLogicQuizAnswer(index, explanation) {
+        const resultPanel = document.getElementById('logic-quiz-result-panel');
+        const statusTitle = document.getElementById('logic-quiz-status-title');
+        const explanationEl = document.getElementById('logic-quiz-explanation');
+
+        resultPanel.classList.remove('hidden');
+
+        // Disable all option buttons
+        const optionButtons = document.querySelectorAll('#logic-quiz-options button');
+        optionButtons.forEach(btn => btn.disabled = true);
+
+        if (index === currentQuizAnswer) {
+            statusTitle.innerText = 'Jawaban Benar! (+15 XP)';
+            statusTitle.className = 'text-xs font-black uppercase block text-emerald-600 font-sans';
+            explanationEl.innerText = explanation;
+
+            // Save points to database
+            saveGamePointsToDatabase(15, 'Menyelesaikan Teka-Teki Logika');
+        } else {
+            statusTitle.innerText = 'Jawaban Kurang Tepat!';
+            statusTitle.className = 'text-xs font-black uppercase block text-rose-600 font-sans';
+            explanationEl.innerText = 'Jangan menyerah! ' + explanation;
+            playSadChime();
+        }
+    }
+
+    // --- CHESS GAME CODE ---
+    let selectedSquare = null;
+    let validMoves = [];
+    let chessBoardState = [];
+    let isChessGameOver = false;
+
+    function initializeChessGame() {
+        chessBoardState = [
+            ['bR', 'bN', 'bB', 'bQ', 'bK', 'bB', 'bN', 'bR'],
+            ['bP', 'bP', 'bP', 'bP', 'bP', 'bP', 'bP', 'bP'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP', 'wP'],
+            ['wR', 'wN', 'wB', 'wQ', 'wK', 'wB', 'wN', 'wR']
+        ];
+        selectedSquare = null;
+        validMoves = [];
+        isChessGameOver = false;
+        document.getElementById('chess-status-msg').innerText = 'Bidak Putih silakan jalan. Klik bidak Anda!';
+        renderChessBoard();
+    }
+
+    function renderChessBoard() {
+        const unicodePieces = {
+            'wP': '♟', 'wR': '♜', 'wN': '♞', 'wB': '♝', 'wQ': '♛', 'wK': '♚',
+            'bP': '♟', 'bR': '♜', 'bN': '♞', 'bB': '♝', 'bQ': '♛', 'bK': '♚'
+        };
+
+        const grid = document.getElementById('chess-board-grid');
+        grid.innerHTML = '';
+
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = chessBoardState[r][c];
+                const square = document.createElement('button');
+                square.type = 'button';
+                
+                const isLight = (r + c) % 2 === 0;
+                square.className = `w-11 h-11 flex items-center justify-center font-sans font-black text-2xl transition-all relative border border-slate-100 ${isLight ? 'bg-slate-50' : 'bg-indigo-50/30'} cursor-pointer`;
+
+                if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) {
+                    square.classList.add('bg-amber-100/80');
+                } else if (validMoves.some(m => m.r === r && m.c === c)) {
+                    square.classList.add('bg-emerald-100/50');
+                    const dot = document.createElement('span');
+                    dot.className = 'absolute w-2 h-2 bg-emerald-500 rounded-full opacity-60';
+                    square.appendChild(dot);
+                }
+
+                if (piece) {
+                    const isWhite = piece.startsWith('w');
+                    const labelSpan = document.createElement('span');
+                    
+                    if (isWhite) {
+                        labelSpan.className = 'text-3xl text-indigo-650 drop-shadow-sm select-none z-10';
+                    } else {
+                        labelSpan.className = 'text-3xl text-slate-800 drop-shadow-sm select-none z-10';
+                    }
+                    labelSpan.innerText = unicodePieces[piece];
+                    square.appendChild(labelSpan);
+                }
+
+                square.onclick = () => handleChessSquareClick(r, c);
+                grid.appendChild(square);
+            }
+        }
+    }
+
+    function handleChessSquareClick(r, c) {
+        if (isChessGameOver) return;
+
+        const piece = chessBoardState[r][c];
+        
+        if (validMoves.some(m => m.r === r && m.c === c)) {
+            executeMove(selectedSquare.r, selectedSquare.c, r, c);
+            selectedSquare = null;
+            validMoves = [];
+            renderChessBoard();
+
+            if (!isChessGameOver) {
+                document.getElementById('chess-status-msg').innerText = 'LUNOU AI sedang berpikir...';
+                setTimeout(executeAIMove, 800);
+            }
+            return;
+        }
+
+        if (piece && piece.startsWith('w')) {
+            selectedSquare = { r, c };
+            validMoves = getLegalMoves(r, c, piece);
+            renderChessBoard();
+        } else {
+            selectedSquare = null;
+            validMoves = [];
+            renderChessBoard();
+        }
+    }
+
+    function executeMove(fromR, fromC, toR, toC) {
+        const piece = chessBoardState[fromR][fromC];
+        const targetPiece = chessBoardState[toR][toC];
+
+        chessBoardState[toR][toC] = piece;
+        chessBoardState[fromR][fromC] = '';
+
+        if (targetPiece === 'bK') {
+            document.getElementById('chess-status-msg').innerText = 'Selamat! Anda Menang (+30 XP)!';
+            isChessGameOver = true;
+            saveGamePointsToDatabase(30, 'Menang Main Catur Melawan LUNOU Chess AI');
+        } else if (targetPiece === 'wK') {
+            document.getElementById('chess-status-msg').innerText = 'King Anda tertangkap! LUNOU AI menang. Coba lagi!';
+            isChessGameOver = true;
+            playSadChime();
+        }
+    }
+
+    function executeAIMove() {
+        if (isChessGameOver) return;
+
+        let moves = [];
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const piece = chessBoardState[r][c];
+                if (piece && piece.startsWith('b')) {
+                    const legal = getLegalMoves(r, c, piece);
+                    legal.forEach(m => {
+                        moves.push({ from: { r, c }, to: m, weight: getMoveWeight(m.r, m.c) });
+                    });
+                }
+            }
+        }
+
+        if (moves.length === 0) {
+            document.getElementById('chess-status-msg').innerText = 'LUNOU AI menyerah! Anda Menang (+30 XP)!';
+            isChessGameOver = true;
+            saveGamePointsToDatabase(30, 'Menang Main Catur Melawan LUNOU Chess AI');
+            return;
+        }
+
+        moves.sort((a, b) => b.weight - a.weight);
+        const maxWeight = moves[0].weight;
+        const bestMoves = moves.filter(m => m.weight === maxWeight);
+        const chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+
+        executeMove(chosen.from.r, chosen.from.c, chosen.to.r, chosen.to.c);
+        renderChessBoard();
+
+        if (!isChessGameOver) {
+            document.getElementById('chess-status-msg').innerText = 'Giliran Anda! Klik bidak Putih.';
+        }
+    }
+
+    function getMoveWeight(r, c) {
+        const target = chessBoardState[r][c];
+        if (!target) return 0;
+        if (target.endsWith('K')) return 1000;
+        if (target.endsWith('Q')) return 9;
+        if (target.endsWith('R')) return 5;
+        if (target.endsWith('B') || target.endsWith('N')) return 3;
+        if (target.endsWith('P')) return 1;
+        return 0;
+    }
+
+    function getLegalMoves(r, c, piece) {
+        let moves = [];
+        const isWhite = piece.startsWith('w');
+        const type = piece.substring(1);
+
+        const checkAdd = (toR, toC) => {
+            if (toR < 0 || toR >= 8 || toC < 0 || toC >= 8) return false;
+            const target = chessBoardState[toR][toC];
+            if (!target) {
+                moves.push({ r: toR, c: toC });
+                return true;
+            }
+            if (target.startsWith(isWhite ? 'b' : 'w')) {
+                moves.push({ r: toR, c: toC });
+            }
+            return false;
+        };
+
+        if (type === 'P') {
+            const dir = isWhite ? -1 : 1;
+            const startRow = isWhite ? 6 : 1;
+
+            if (r + dir >= 0 && r + dir < 8 && !chessBoardState[r + dir][c]) {
+                moves.push({ r: r + dir, c: c });
+                if (r === startRow && !chessBoardState[r + dir * 2][c]) {
+                    moves.push({ r: r + dir * 2, c: c });
+                }
+            }
+            for (let side of [-1, 1]) {
+                const targetC = c + side;
+                if (targetC >= 0 && targetC < 8 && r + dir >= 0 && r + dir < 8) {
+                    const target = chessBoardState[r + dir][targetC];
+                    if (target && target.startsWith(isWhite ? 'b' : 'w')) {
+                        moves.push({ r: r + dir, c: targetC });
+                    }
+                }
+            }
+        } 
+        else if (type === 'N') {
+            const offsets = [
+                [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+                [1, -2], [1, 2], [2, -1], [2, 1]
+            ];
+            offsets.forEach(o => checkAdd(r + o[0], c + o[1]));
+        } 
+        else if (type === 'B' || type === 'Q') {
+            const dirs = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+            dirs.forEach(d => {
+                let step = 1;
+                while (checkAdd(r + d[0] * step, c + d[1] * step)) {
+                    step++;
+                }
+            });
+        }
+        
+        if (type === 'R' || type === 'Q') {
+            const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+            dirs.forEach(d => {
+                let step = 1;
+                while (checkAdd(r + d[0] * step, c + d[1] * step)) {
+                    step++;
+                }
+            });
+        } 
+        else if (type === 'K') {
+            const dirs = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],           [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+            dirs.forEach(d => checkAdd(r + d[0], c + d[1]));
+        }
+
+        return moves;
+    }
+
+    // --- 2048 STRATEGY GAME CODE ---
+    let board2048 = [];
+    let score2048 = 0;
+    let earnedXpMilestones = { 500: false, 1000: false, 2048: false };
+
+    function initialize2048Game() {
+        board2048 = [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0]
+        ];
+        score2048 = 0;
+        earnedXpMilestones = { 500: false, 1000: false, 2048: false };
+        document.getElementById('game-2048-score').innerText = '0';
+        document.getElementById('game-2048-feedback').classList.add('hidden');
+
+        spawn2048Tile();
+        spawn2048Tile();
+        render2048Board();
+    }
+
+    function spawn2048Tile() {
+        let empties = [];
+        for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 4; c++) {
+                if (board2048[r][c] === 0) {
+                    empties.push({ r, c });
+                }
+            }
+        }
+        if (empties.length > 0) {
+            const cell = empties[Math.floor(Math.random() * empties.length)];
+            board2048[cell.r][cell.c] = Math.random() < 0.9 ? 2 : 4;
+        }
+    }
+
+    function render2048Board() {
+        const container = document.getElementById('game-2048-board');
+        container.innerHTML = '';
+
+        const tileColors = {
+            0: 'bg-slate-200/50 text-transparent',
+            2: 'bg-indigo-50 text-indigo-700 border border-indigo-100',
+            4: 'bg-indigo-100 text-indigo-800 border border-indigo-200',
+            8: 'bg-indigo-200 text-indigo-900 border border-indigo-300',
+            16: 'bg-amber-100 text-amber-800 border border-amber-200',
+            32: 'bg-amber-200 text-amber-900 border border-amber-300',
+            64: 'bg-orange-100 text-orange-800 border border-orange-200',
+            128: 'bg-rose-100 text-rose-800 border border-rose-200',
+            256: 'bg-emerald-100 text-emerald-800 border border-emerald-200',
+            512: 'bg-emerald-200 text-emerald-900 border border-emerald-300',
+            1024: 'bg-purple-100 text-purple-800 border border-purple-200',
+            2048: 'bg-purple-600 text-white border border-purple-700 shadow-md animate-pulse'
+        };
+
+        for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 4; c++) {
+                const val = board2048[r][c];
+                const tile = document.createElement('div');
+                
+                const colorClass = tileColors[val] || 'bg-slate-900 text-white';
+                tile.className = `flex items-center justify-center rounded-xl font-sans font-black text-sm select-none transition-all duration-100 ${colorClass}`;
+                tile.innerText = val !== 0 ? val : '';
+                container.appendChild(tile);
+            }
+        }
+    }
+
+    function move2048(dir) {
+        let moved = false;
+
+        const rotate = (matrix) => {
+            const n = matrix.length;
+            let res = Array.from({ length: n }, () => Array(n).fill(0));
+            for (let r = 0; r < n; r++) {
+                for (let c = 0; c < n; c++) {
+                    res[c][n - 1 - r] = matrix[r][c];
+                }
+            }
+            return res;
+        };
+
+        let rotations = 0;
+        if (dir === 'up') rotations = 3;
+        else if (dir === 'right') rotations = 2;
+        else if (dir === 'down') rotations = 1;
+
+        let tempBoard = board2048.map(row => [...row]);
+        for (let i = 0; i < rotations; i++) {
+            tempBoard = rotate(tempBoard);
+        }
+
+        for (let r = 0; r < 4; r++) {
+            let row = tempBoard[r].filter(val => val !== 0);
+            let nextRow = [];
+            for (let c = 0; c < row.length; c++) {
+                if (c + 1 < row.length && row[c] === row[c + 1]) {
+                    const combined = row[c] * 2;
+                    nextRow.push(combined);
+                    score2048 += combined;
+                    c++;
+                    moved = true;
+                } else {
+                    nextRow.push(row[c]);
+                }
+            }
+            while (nextRow.length < 4) {
+                nextRow.push(0);
+            }
+            if (JSON.stringify(tempBoard[r]) !== JSON.stringify(nextRow)) {
+                moved = true;
+            }
+            tempBoard[r] = nextRow;
+        }
+
+        const unRotations = (4 - rotations) % 4;
+        for (let i = 0; i < unRotations; i++) {
+            tempBoard = rotate(tempBoard);
+        }
+
+        if (moved) {
+            board2048 = tempBoard;
+            spawn2048Tile();
+            render2048Board();
+            document.getElementById('game-2048-score').innerText = score2048;
+            check2048Milestones();
+        }
+    }
+
+    function check2048Milestones() {
+        const milestones = [500, 1000, 2048];
+        const feedback = document.getElementById('game-2048-feedback');
+        
+        milestones.forEach(m => {
+            if (score2048 >= m && !earnedXpMilestones[m]) {
+                earnedXpMilestones[m] = true;
+                feedback.classList.remove('hidden');
+                
+                let bonusXp = m === 2048 ? 20 : 10;
+                feedback.innerText = `Skor Anda mencapai ${m}! Anda mendapatkan +${bonusXp} XP!`;
+                
+                saveGamePointsToDatabase(bonusXp, `Mencapai skor ${m} di 2048 Brain Strategy`);
+            }
+        });
+    }
+
+    // --- INTERACTIVE GUIDED TOUR DRIVER ---
+    let currentTourStep = 0;
+    const tourSteps = [
+        {
+            selector: '#dashboard-tab-work-btn',
+            text: 'Ini adalah Pusat Kerja. Di sini Anda dapat memantau rate penyelesaian tugas Anda, melihat motivasi kerja dari LUNOU AI, dan mengelola tugas proyek harian Anda.',
+            action: () => switchDashboardTab('work')
+        },
+        {
+            selector: '#dashboard-tab-wellbeing-btn',
+            text: 'Ini adalah Ruang Pemulihan & Refleksi. Di sini Anda bisa mengelola kesehatan mental dan emosi Anda. Mari beralih ke tab ini untuk melanjutkan panduan.',
+            action: () => {
+                switchDashboardTab('wellbeing');
+                playHappyChime();
+            }
+        },
+        {
+            selector: '#w-tab-mental-friend-btn',
+            text: 'Menu Teman Cerita LUNOU adalah ruang konseling pribadi Anda. Ceritakan kelelahan, stres, atau kekhawatiran Anda di sini untuk mendapatkan respon hangat penyejuk hati.',
+            action: () => {
+                switchDashboardTab('wellbeing');
+                switchWellbeingSubTab('mental-friend');
+            }
+        },
+        {
+            selector: '#w-tab-mental-game-btn',
+            text: 'Di Ruang Game & Asah Otak, Anda bisa menenangkan pikiran dengan Zen Balloon Popper, atau melatih fokus dengan Zen Sudoku 9x9, catur taktis, serta puzzle strategi 2048. Semua poin XP yang Anda peroleh akan tersimpan otomatis!',
+            action: () => {
+                switchDashboardTab('wellbeing');
+                switchWellbeingSubTab('mental-game');
+            }
+        },
+        {
+            selector: '#w-tab-mental-reward-btn',
+            text: 'Dan ini adalah Self-Reward Shop. Belanjakan akumulasi XP dari pekerjaan dan game Anda untuk mengklaim reward riil seperti kopi susu sore atau tidur siang sebagai bentuk apresiasi diri.',
+            action: () => {
+                switchDashboardTab('wellbeing');
+                switchWellbeingSubTab('mental-reward');
+            }
+        },
+        {
+            selector: '.fixed.bottom-6, #chatbot-toggle, [onclick*="chatbot"]',
+            text: 'Terakhir, floating widget LUNOU Companion selalu ada di sudut kanan bawah untuk mendengarkan obrolan Anda, menyemangati Anda, serta menampilkan daftar tugas kapan saja.',
+            action: () => {}
+        }
+    ];
+
+    function startGuidedTour() {
+        playHappyChime();
+        currentTourStep = 0;
+        
+        document.getElementById('guided-tour-overlay').classList.remove('hidden');
+        document.getElementById('guided-tour-tooltip').classList.remove('hidden');
+        
+        showTourStep(0);
+    }
+
+    function showTourStep(stepIndex) {
+        // Clear previous highlights
+        document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+
+        if (stepIndex >= tourSteps.length) {
+            endGuidedTour();
+            return;
+        }
+
+        const step = tourSteps[stepIndex];
+        
+        // Execute tab switching action if any
+        if (step.action) {
+            step.action();
+        }
+
+        // Try to query the element
+        let targetEl = null;
+        if (step.selector) {
+            const selectors = step.selector.split(',');
+            for (let sel of selectors) {
+                targetEl = document.querySelector(sel.trim());
+                if (targetEl && targetEl.offsetWidth > 0 && targetEl.offsetHeight > 0) {
+                    break;
+                }
+            }
+        }
+
+        // Update indicators & content
+        document.getElementById('guided-tour-step-indicator').innerText = `${stepIndex + 1} / ${tourSteps.length}`;
+        document.getElementById('guided-tour-text').innerText = step.text;
+        
+        const nextBtn = document.getElementById('guided-tour-next-btn');
+        if (stepIndex === tourSteps.length - 1) {
+            nextBtn.innerText = 'Selesai';
+        } else {
+            nextBtn.innerText = 'Lanjut';
+        }
+
+        if (targetEl) {
+            // Apply highlight class
+            targetEl.classList.add('tour-highlight');
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Position tooltip
+            setTimeout(() => {
+                const rect = targetEl.getBoundingClientRect();
+                const tooltip = document.getElementById('guided-tour-tooltip');
+                
+                let top = rect.bottom + window.scrollY + 12;
+                let left = rect.left + window.scrollX;
+
+                // Adjust if tooltip overflows viewport height
+                if (rect.bottom + 220 > window.innerHeight) {
+                    top = rect.top + window.scrollY - tooltip.offsetHeight - 12;
+                }
+                
+                // Adjust horizontally to fit window
+                left = Math.max(16, Math.min(left, window.innerWidth - tooltip.offsetWidth - 16));
+
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${left}px`;
+            }, 300);
+        } else {
+            // Center tooltip on screen if target element not found
+            const tooltip = document.getElementById('guided-tour-tooltip');
+            tooltip.style.top = '50%';
+            tooltip.style.left = '50%';
+            tooltip.style.transform = 'translate(-50%, -50%)';
+            tooltip.style.position = 'fixed';
+        }
+    }
+
+    function nextGuidedTourStep() {
+        currentTourStep++;
+        if (currentTourStep >= tourSteps.length) {
+            endGuidedTour();
+        } else {
+            showTourStep(currentTourStep);
+        }
+    }
+
+    function endGuidedTour() {
+        // Clear highlights
+        document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+
+        document.getElementById('guided-tour-overlay').classList.add('hidden');
+        const tooltip = document.getElementById('guided-tour-tooltip');
+        tooltip.classList.add('hidden');
+        tooltip.style.transform = ''; // Clear center styling
+        tooltip.style.position = 'absolute';
+        
+        playHappyChime();
+        alert('Panduan selesai! Selamat menjelajahi fitur Yoimo.');
     }
 </script>
 @endpush

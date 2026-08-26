@@ -463,4 +463,222 @@ class TaskController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    public function generateTasksAi(Request $request, Project $project): RedirectResponse
+    {
+        $roadmaps = ProjectRoadmap::where('project_id', $project->id)->orderBy('start_date')->get();
+
+        if ($roadmaps->isEmpty()) {
+            return back()->with('error', 'Silakan buat alur linimasa/roadmap proyek terlebih dahulu sebelum men-generate tugas otomatis.');
+        }
+
+        $projectName = $project->name;
+        $projectBrief = $project->description ?: 'Tidak ada deskripsi detail.';
+        $customInstruction = $request->input('instruction') ?: 'Tidak ada instruksi khusus.';
+
+        // Build Roadmap details for prompt context
+        $roadmapContext = "";
+        foreach ($roadmaps as $idx => $rm) {
+            $roadmapContext .= "FASE INDEX {$idx}:\n"
+                . "- Judul: {$rm->title}\n"
+                . "- Deskripsi: {$rm->description}\n"
+                . "- Tanggal Mulai: " . $rm->start_date->format('Y-m-d') . "\n"
+                . "- Tanggal Selesai: " . $rm->end_date->format('Y-m-d') . "\n"
+                . "- Objectives/KPIs:\n";
+            if (!empty($rm->objectives)) {
+                foreach ($rm->objectives as $oIdx => $obj) {
+                    $roadmapContext .= "  * KPI INDEX {$oIdx}: " . $obj['target'] . "\n";
+                }
+            } else {
+                $roadmapContext .= "  * (Tidak ada KPI spesifik)\n";
+            }
+            $roadmapContext .= "\n";
+        }
+
+        $systemPrompt = "Anda adalah Asisten Proyek AI bernama LUNOU yang bertindak sebagai Senior IT Project Manager dan Scrum Master profesional. Dalam merancang tugas, Anda wajib mengadopsi pola pikir Systems Thinking (melihat proyek sebagai kesatuan sistem yang saling terhubung), Design Thinking (berorientasi pada pemecahan masalah secara kreatif, empati pengguna, ideasi, dan pengujian berulang), serta Human-First (mengutamakan kebutuhan manusia/pengguna akhir, kejelasan instruksi kerja yang empati bagi tim pengembang, serta dampak positif aplikasi bagi penggunanya). Tugas Anda adalah menyebarkan/memecah target KPI linimasa proyek menjadi daftar penugasan (Tasks) yang sangat detail, granular, dan tidak generik untuk tim pengembang.\n\n"
+            . "DETAIL PROYEK:\n"
+            . "- Nama Proyek: {$projectName}\n"
+            . "- Deskripsi/Brief Proyek: {$projectBrief}\n\n"
+            . "ALUR LINIMASA (ROADMAP) SAAT INI:\n"
+            . "{$roadmapContext}\n"
+            . "INSTRUKSI KHUSUS DARI USER:\n"
+            . "{$customInstruction}\n\n"
+            . "ATURAN GENERATE TUGAS (TASKS):\n"
+            . "1. Untuk setiap KPI/Objective pada masing-masing fase, pecahkan menjadi 1 hingga 3 tugas yang sangat DETAIL dan SPESIFIK. Jangan gunakan judul/deskripsi generik (misal: jangan gunakan 'Desain logo' saja, melainkan 'Membuat 3 opsi sketsa logo komunitas Kelompok Wanita Tani dengan variasi warna alam').\n"
+            . "2. Setiap tugas harus dikaitkan dengan fase linimasa yang tepat (`roadmap_phase_index`) dan indeks KPI yang relevan (`linked_objective_index`).\n"
+            . "3. Tenggat waktu pengerjaan tugas (`due_date`) wajib berada di dalam rentang tanggal fase yang bersangkutan, dan disarankan disamakan dengan Tanggal Selesai fase tersebut.\n"
+            . "4. Prioritas tugas ditentukan secara logis: 'Low', 'Medium', 'High', atau 'Urgent'.\n"
+            . "5. Format deskripsi tugas wajib memberikan instruksi langkah-demi-langkah (step-by-step) yang konkret untuk mempermudah pegawai.\n"
+            . "6. Kembalikan hasilnya dalam format JSON murni berupa array objek dengan struktur:\n"
+            . "[\n"
+            . "  {\n"
+            . "    \"roadmap_phase_index\": 0,\n"
+            . "    \"linked_objective_index\": 1,\n"
+            . "    \"title\": \"Judul Tugas Rinci\",\n"
+            . "    \"description\": \"Deskripsi instruksi langkah-demi-langkah...\",\n"
+            . "    \"priority\": \"Medium\",\n"
+            . "    \"due_date\": \"YYYY-MM-DD\"\n"
+            . "  },\n"
+            . "  ...\n"
+            . "]\n"
+            . "Jangan sertakan markdown, pembungkus ```json, atau penjelasan apapun selain JSON tersebut.";
+
+        try {
+            $aiService = app(\App\Services\AIService::class);
+            $response = $aiService->chat([
+                'system' => "Anda adalah Asisten Proyek AI bernama LUNOU yang bertindak sebagai Senior IT Project Manager. Tugas Anda adalah memecah roadmap proyek IT menjadi daftar penugasan detail kuantitatif berformat JSON murni.",
+                'message' => $systemPrompt,
+                'temperature' => 0.2
+            ]);
+
+            $content = trim($response->content);
+            if (str_starts_with($content, '```')) {
+                $content = preg_replace('/^```(?:json)?|```$/m', '', $content);
+            }
+            $content = trim($content);
+
+            $tasks = json_decode($content, true);
+
+            if (!is_array($tasks)) {
+                throw new \Exception("Format respon AI tidak valid: " . $content);
+            }
+
+            $createdCount = 0;
+            foreach ($tasks as $taskData) {
+                $phaseIdx = $taskData['roadmap_phase_index'] ?? null;
+                $roadmapId = null;
+                if ($phaseIdx !== null && isset($roadmaps[$phaseIdx])) {
+                    $roadmapId = $roadmaps[$phaseIdx]->id;
+                }
+
+                ProjectTask::create([
+                    'project_id'             => $project->id,
+                    'project_roadmap_id'     => $roadmapId,
+                    'assigned_to'            => null, // Unassigned
+                    'created_by'             => Auth::id(),
+                    'title'                  => $taskData['title'],
+                    'description'            => $taskData['description'],
+                    'priority'               => $taskData['priority'] ?? 'Medium',
+                    'status'                 => 'Todo',
+                    'due_date'               => $taskData['due_date'] ?? null,
+                    'linked_objective_index' => $taskData['linked_objective_index'] ?? null,
+                ]);
+                $createdCount++;
+            }
+
+            // Catat Audit Log
+            ProjectActivityLog::record($project->id, 'Task', 'CREATE', "Men-generate secara otomatis {$createdCount} daftar tugas terperinci berdasarkan alur linimasa menggunakan LUNOU AI.");
+
+            return redirect()->route('management.projects.tasks.index', $project->id)
+                ->with('success', "Berhasil men-generate {$createdCount} tugas baru secara otomatis menggunakan LUNOU AI.");
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to generate Tasks via AI: " . $e->getMessage());
+            return back()->with('error', 'Gagal memproses pembuatan tugas otomatis: ' . $e->getMessage());
+        }
+    }
+
+    public function addSingleTaskAi(Request $request, Project $project): RedirectResponse
+    {
+        $request->validate([
+            'prompt' => 'required|string|max:1000'
+        ]);
+
+        $roadmaps = ProjectRoadmap::where('project_id', $project->id)->orderBy('start_date')->get();
+        $projectName = $project->name;
+        $projectBrief = $project->description ?: 'Tidak ada deskripsi detail.';
+        $promptText = $request->input('prompt');
+
+        // Build Roadmap details for prompt context
+        $roadmapContext = "";
+        foreach ($roadmaps as $idx => $rm) {
+            $roadmapContext .= "FASE INDEX {$idx} (ID: {$rm->id}):\n"
+                . "- Judul: {$rm->title}\n"
+                . "- Tanggal Mulai: " . $rm->start_date->format('Y-m-d') . "\n"
+                . "- Tanggal Selesai: " . $rm->end_date->format('Y-m-d') . "\n"
+                . "- Objectives/KPIs:\n";
+            if (!empty($rm->objectives)) {
+                foreach ($rm->objectives as $oIdx => $obj) {
+                    $roadmapContext .= "  * KPI INDEX {$oIdx}: " . $obj['target'] . "\n";
+                }
+            }
+            $roadmapContext .= "\n";
+        }
+
+        $systemPrompt = "Anda adalah Asisten Proyek AI bernama LUNOU yang bertindak sebagai Senior IT Project Manager dan Scrum Master profesional. Anda menguasai Systems Thinking, Design Thinking, dan Human-First.\n\n"
+            . "Tugas Anda adalah merancang SATU tugas (Task) terperinci berdasarkan permintaan pengguna (prompt) dan konteks proyek berikut.\n\n"
+            . "DETAIL PROYEK:\n"
+            . "- Nama Proyek: {$projectName}\n"
+            . "- Deskripsi/Brief Proyek: {$projectBrief}\n\n"
+            . "ALUR LINIMASA (ROADMAP) PROYEK:\n"
+            . "{$roadmapContext}\n"
+            . "PERMINTAAN USER UNTUK TUGAS INI:\n"
+            . "{$promptText}\n\n"
+            . "ATURAN MERANCANG TUGAS:\n"
+            . "1. Buat tugas yang sangat spesifik dan detail (tidak boleh generik).\n"
+            . "2. Tentukan prioritas ('Low', 'Medium', 'High', atau 'Urgent') secara logis berdasarkan urgensi yang disebutkan user atau jenis tugas.\n"
+            . "3. Tentukan due_date dalam format YYYY-MM-DD. Jika user menyebutkan waktu (misal 'akhir minggu ini'), hitunglah secara relatif dari tanggal hari ini yaitu " . now()->format('Y-m-d') . ". Jika tugas dapat dikaitkan dengan fase linimasa tertentu, pastikan due_date berada di dalam rentang fase tersebut.\n"
+            . "4. Jika tugas berkaitan dengan fase linimasa tertentu, tentukan `roadmap_phase_index` (indeks fase, mulai dari 0) dan `linked_objective_index` (indeks KPI dalam fase tersebut, mulai dari 0). Jika tidak cocok dengan fase mana pun, kosongkan (null).\n"
+            . "5. Format deskripsi tugas wajib berupa instruksi kerja langkah-demi-langkah (step-by-step) yang konkret.\n"
+            . "6. Kembalikan hasilnya dalam format JSON murni dengan struktur:\n"
+            . "{\n"
+            . "  \"roadmap_phase_index\": 0,\n"
+            . "  \"linked_objective_index\": 1,\n"
+            . "  \"title\": \"Judul Tugas\",\n"
+            . "  \"description\": \"Deskripsi detail tugas...\",\n"
+            . "  \"priority\": \"High\",\n"
+            . "  \"due_date\": \"YYYY-MM-DD\"\n"
+            . "}\n"
+            . "Jangan sertakan markdown, pembungkus ```json, atau penjelasan lainnya.";
+
+        try {
+            $aiService = app(\App\Services\AIService::class);
+            $response = $aiService->chat([
+                'system' => "Anda adalah Asisten Proyek AI bernama LUNOU. Tugas Anda adalah menganalisis prompt dan merancang satu tugas terperinci berformat JSON murni.",
+                'message' => $systemPrompt,
+                'temperature' => 0.2
+            ]);
+
+            $content = trim($response->content);
+            if (str_starts_with($content, '```')) {
+                $content = preg_replace('/^```(?:json)?|```$/m', '', $content);
+            }
+            $content = trim($content);
+
+            $taskData = json_decode($content, true);
+
+            if (!is_array($taskData) || !isset($taskData['title'])) {
+                throw new \Exception("Format respon AI tidak valid: " . $content);
+            }
+
+            $phaseIdx = $taskData['roadmap_phase_index'] ?? null;
+            $roadmapId = null;
+            if ($phaseIdx !== null && isset($roadmaps[$phaseIdx])) {
+                $roadmapId = $roadmaps[$phaseIdx]->id;
+            }
+
+            $task = ProjectTask::create([
+                'project_id'             => $project->id,
+                'project_roadmap_id'     => $roadmapId,
+                'assigned_to'            => null,
+                'created_by'             => Auth::id(),
+                'title'                  => $taskData['title'],
+                'description'            => $taskData['description'],
+                'priority'               => $taskData['priority'] ?? 'Medium',
+                'status'                 => 'Todo',
+                'due_date'               => $taskData['due_date'] ?? null,
+                'linked_objective_index' => $taskData['linked_objective_index'] ?? null,
+            ]);
+
+            // Catat Audit Log
+            ProjectActivityLog::record($project->id, 'Task', 'CREATE', "Membuat satu tugas baru secara otomatis menggunakan LUNOU AI: [{$task->title}].");
+
+            return redirect()->route('management.projects.tasks.index', $project->id)
+                ->with('success', 'Berhasil menambahkan tugas "' . $task->title . '" secara otomatis menggunakan LUNOU AI.');
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to add single Task via AI: " . $e->getMessage());
+            return back()->with('error', 'Gagal memproses pembuatan tugas otomatis: ' . $e->getMessage());
+        }
+    }
 }

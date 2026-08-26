@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->command('send:deadline-reminders')->dailyAt('08:00');
     })
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(append: [
+            \App\Http\Middleware\DemoAuthMiddleware::class,
+        ]);
         // Daftarkan alias middleware role di sini
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,

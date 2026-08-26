@@ -64,6 +64,12 @@
                     <span>Linimasa</span>
                 </a>
 
+                <!-- Portal Klien Share Settings Button -->
+                <button type="button" onclick="openClientPortalConfigModal()" class="flex-1 sm:flex-initial px-4 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 10.742l-1.922-.641A3.001 3.001 0 1110 8c0 .411-.082.802-.232 1.157l1.922.641A3.001 3.001 0 1114 12c0-.411.082-.802.232-1.157l-1.922-.641A3.001 3.001 0 1110 8c0 .411.082.802.232 1.157z"></path></svg>
+                    <span>Portal Klien</span>
+                </button>
+
                 <!-- Portofolio Showcase Settings -->
                 <a href="{{ route('management.projects.portfolio.edit', $project->id) }}" class="flex-1 sm:flex-initial px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
@@ -508,7 +514,139 @@
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
     }
+
+    function openClientPortalConfigModal() {
+        document.getElementById('client-portal-config-modal').classList.remove('hidden');
+    }
+
+    function closeClientPortalConfigModal() {
+        document.getElementById('client-portal-config-modal').classList.add('hidden');
+    }
+
+    function copyClientShareLink() {
+        const copyText = document.getElementById("client-share-link-input");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+        alert("Link share klien berhasil disalin ke clipboard!");
+    }
 </script>
+
+<!-- CLIENT PORTAL CONFIG MODAL (EMOJI-FREE) -->
+@php
+    $clientQuestions = \Illuminate\Support\Facades\DB::table('project_client_questions')
+        ->where('project_id', $project->id)
+        ->orderBy('created_at', 'desc')
+        ->get();
+@endphp
+<div id="client-portal-config-modal" class="hidden fixed inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-[2px] z-50 transition-all duration-300">
+    <div class="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-2xl w-full max-w-2xl mx-4 transform transition-all scale-95 duration-300 max-h-[85vh] overflow-y-auto">
+        <div class="space-y-6">
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-rose-50 border border-rose-100 rounded-2xl">
+                        <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 10.742l-1.922-.641A3.001 3.001 0 1110 8c0 .411-.082.802-.232 1.157l1.922.641A3.001 3.001 0 1114 12c0-.411.082-.802.232-1.157l-1.922-.641A3.001 3.001 0 1110 8c0 .411.082.802.232 1.157z"></path></svg>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-black text-slate-850 uppercase tracking-tight">Pengaturan Portal Klien</h4>
+                        <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Berbagi progres dan komunikasi langsung dengan klien</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeClientPortalConfigModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer">&times;</button>
+            </div>
+
+            <!-- Link Configuration Box -->
+            <div class="bg-slate-50 border border-slate-200/60 rounded-3xl p-5 space-y-4">
+                @if($project->share_token)
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Link Portal Klien Aktif</label>
+                        <div class="flex gap-2">
+                            <input type="text" readonly id="client-share-link-input" value="{{ url('/shared/project/' . $project->share_token) }}"
+                                   class="w-full px-4 py-2.5 text-xs bg-white border border-slate-200 rounded-xl font-mono text-slate-650 focus:outline-none">
+                            <button type="button" onclick="copyClientShareLink()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer shrink-0">
+                                Salin
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <form method="POST" action="{{ route('management.projects.share-token', $project->id) }}">
+                            @csrf
+                            <button type="submit" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                                Regenerasi Token
+                              </button>
+                        </form>
+                        <form method="POST" action="{{ route('management.projects.disable-share', $project->id) }}">
+                            @csrf
+                            <button type="submit" class="px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                                Nonaktifkan Link
+                            </button>
+                        </form>
+                    </div>
+                @else
+                    <div class="text-center py-4 space-y-3">
+                        <p class="text-xs text-slate-500 font-semibold">Link Portal Klien saat ini belum aktif. Aktifkan untuk mengizinkan klien melihat kemajuan roadmap, progres tugas, laporan AI, dan mengajukan pertanyaan.</p>
+                        <form method="POST" action="{{ route('management.projects.share-token', $project->id) }}">
+                            @csrf
+                            <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer">
+                                Aktifkan Link Portal Klien
+                            </button>
+                        </form>
+                    </div>
+                @endif
+            </div>
+
+            <!-- Questions List -->
+            <div class="space-y-4">
+                <h5 class="text-xs font-black text-slate-800 uppercase tracking-wider">Pertanyaan dari Klien ({{ count($clientQuestions) }})</h5>
+
+                @if($clientQuestions->isEmpty())
+                    <div class="border border-dashed border-slate-200 rounded-2xl py-8 px-4 text-center">
+                        <p class="text-xs text-slate-400 font-semibold">Belum ada pertanyaan dari klien yang diajukan.</p>
+                    </div>
+                @else
+                    <div class="space-y-4 max-h-[30vh] overflow-y-auto pr-1">
+                        @foreach($clientQuestions as $q)
+                            <div class="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl space-y-3">
+                                <div class="flex items-center justify-between text-[10px] text-slate-400 font-semibold">
+                                    <span>Dari: <strong class="text-slate-700 font-black">{{ $q->client_name }}</strong></span>
+                                    <span>{{ \Carbon\Carbon::parse($q->created_at)->diffForHumans() }}</span>
+                                </div>
+                                <p class="text-xs font-bold text-slate-800 leading-normal">{{ $q->question }}</p>
+
+                                @if($q->answer)
+                                    <div class="pl-3 border-l-2 border-emerald-500 space-y-1 pt-1">
+                                        <span class="text-[9px] font-black text-emerald-700 uppercase tracking-wider block">Jawaban Tim:</span>
+                                        <p class="text-xs font-semibold text-slate-600 leading-normal">{{ $q->answer }}</p>
+                                    </div>
+                                @else
+                                    <form method="POST" action="{{ route('management.projects.questions.answer', $q->id) }}" class="pt-2">
+                                        @csrf
+                                        <div class="flex gap-2">
+                                            <input type="text" name="answer" required placeholder="Tulis jawaban Anda..."
+                                                   class="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-slate-700">
+                                            <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer shrink-0">
+                                                Kirim
+                                            </button>
+                                        </div>
+                                    </form>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeClientPortalConfigModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endpush
 
 @endsection

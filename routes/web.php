@@ -22,6 +22,62 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Management\ActivityLogController as ManagementActivityLogController;
 
 
+Route::post('/demo-login', function (\Illuminate\Http\Request $request) {
+    $token = $request->input('token');
+    $name = trim($request->input('name'));
+    $email = trim($request->input('email'));
+    $org = trim($request->input('organization'));
+    
+    if (empty($name)) {
+        return redirect()->back()->with('error', 'Nama lengkap wajib diisi untuk mencoba demo.');
+    }
+    
+    if (empty($email)) {
+        return redirect()->back()->with('error', 'Alamat email wajib diisi untuk mencoba demo.');
+    }
+    
+    if ($token !== 'demo_management' && $token !== 'demo_employee') {
+        return redirect()->back()->with('error', 'Token demo tidak valid.');
+    }
+    
+    try {
+        \Illuminate\Support\Facades\DB::table('demo_tracks')->insert([
+            'name' => $name,
+            'email' => $email,
+            'organization' => $org,
+            'token' => $token,
+            'ip_address' => $request->ip(),
+            'created_at' => \Carbon\Carbon::now(),
+            'updated_at' => \Carbon\Carbon::now(),
+        ]);
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error('Demo tracking failed: ' . $e->getMessage());
+    }
+    
+    $role = ($token === 'demo_management') ? 'management' : 'user';
+    session([
+        'demo_user_role' => $role,
+        'demo_user_name' => $name . ' (' . ($org ?: 'Personal') . ')',
+        'demo_user_email' => $email
+    ]);
+    
+    $realUser = \App\Models\User::where('role', $role)->first();
+    if ($realUser) {
+        \Illuminate\Support\Facades\Auth::login($realUser);
+    }
+    
+    $targetRoute = ($role === 'management') ? 'management.dashboard' : 'user.dashboard';
+    return redirect()->route($targetRoute);
+})->name('demo-login-submit');
+
+Route::get('/demo-login', function (\Illuminate\Http\Request $request) {
+    $token = $request->query('token');
+    if ($token === 'demo_management' || $token === 'demo_employee') {
+        return redirect()->route('login', ['demo_token' => $token]);
+    }
+    return redirect()->route('login')->with('error', 'Token demo tidak valid.');
+})->name('demo-login');
+
 Route::get('/', function () {
     if (Illuminate\Support\Facades\Auth::check()) {
         $role = Illuminate\Support\Facades\Auth::user()->role;
@@ -52,6 +108,10 @@ Route::get('/company/{slug}', [PublicCompanyController::class, 'show'])->name('p
 
 // Public Award Certificate Share Link
 Route::get('/award/share/{token}', [\App\Http\Controllers\PublicAwardController::class, 'show'])->name('public.award.show');
+
+// Client Shared Portal Links
+Route::get('/shared/project/{token}', [\App\Http\Controllers\ClientPortalController::class, 'show'])->name('client.portal.show');
+Route::post('/shared/project/{token}/ask', [\App\Http\Controllers\ClientPortalController::class, 'submitQuestion'])->name('client.portal.ask');
 
 // 1. Superadmin Area
 Route::middleware(['auth', 'verified', 'role:superadmin'])
@@ -98,15 +158,20 @@ Route::middleware(['auth', 'verified', 'role:management,superadmin'])
         Route::post('/projects/{project}/portfolio/generate-ai', [ManagementProjectController::class, 'generatePortfolioAi'])->name('projects.portfolio.generate-ai');
 
         // Sub-Modul Linimasa / Roadmap
+        Route::post('/projects/{project}/roadmaps/generate-ai', [ManagementRoadmapController::class, 'generateRoadmapAi'])->name('projects.roadmaps.generate-ai');
+        Route::post('/projects/{project}/roadmaps/suggest-objectives-ai', [ManagementRoadmapController::class, 'suggestObjectivesAi'])->name('projects.roadmaps.suggest-objectives-ai');
+        Route::post('/projects/{project}/roadmaps/{roadmap}/enhance-ai', [ManagementRoadmapController::class, 'enhanceRoadmapAi'])->name('projects.roadmaps.enhance-ai');
         Route::resource('projects.roadmaps', ManagementRoadmapController::class)->except(['create', 'show', 'edit']);
 
         // Di dalam Route::prefix('management')->group(...)
         Route::patch('/projects/{project}/agendas/{agenda}/status', [ManagementAgendaController::class, 'updateStatus'])->name('projects.agendas.update-status');
         Route::post('/projects/{project}/agendas/generate-ai', [ManagementAgendaController::class, 'generateAgendaAi'])->name('projects.agendas.generate-ai');
+        Route::post('/projects/{project}/agendas/generate-bulk-ai', [ManagementAgendaController::class, 'generateBulkAgendasAi'])->name('projects.agendas.generate-bulk-ai');
         Route::resource('projects.agendas', ManagementAgendaController::class)->except(['create', 'show', 'edit', 'update']);
 
-        // Sub-Modul Tasks & Submission
         Route::post('/projects/{project}/tasks/generate-ai', [ManagementProjectController::class, 'generateTaskAi'])->name('projects.tasks.generate-ai');
+        Route::post('/projects/{project}/tasks/generate-roadmap-tasks-ai', [ManagementTaskController::class, 'generateTasksAi'])->name('projects.tasks.generate-roadmap-tasks-ai');
+        Route::post('/projects/{project}/tasks/add-single-ai', [ManagementTaskController::class, 'addSingleTaskAi'])->name('projects.tasks.add-single-ai');
         Route::patch('/projects/{project}/tasks/{task}/status', [ManagementTaskController::class, 'updateStatus'])->name('projects.tasks.update-status');
         Route::post('/projects/{project}/tasks/{task}/submit-report', [ManagementTaskController::class, 'submitReport'])->name('projects.tasks.submit-report');
         Route::resource('projects.tasks', ManagementTaskController::class)->except(['create', 'show', 'edit', 'update']);
@@ -120,6 +185,11 @@ Route::middleware(['auth', 'verified', 'role:management,superadmin'])
         Route::get('/projects-export', [ManagementProjectController::class, 'exportCsv'])->name('projects.export');
         Route::post('/projects-import', [ManagementProjectController::class, 'importCsv'])->name('projects.import');
         Route::get('/projects-template', [ManagementProjectController::class, 'downloadTemplate'])->name('projects.template');
+
+        // Client Portal Management
+        Route::post('/projects/{project}/share-token', [ManagementProjectController::class, 'generateShareToken'])->name('projects.share-token');
+        Route::post('/projects/{project}/disable-share', [ManagementProjectController::class, 'disableShareToken'])->name('projects.disable-share');
+        Route::post('/projects/questions/{question}/answer', [ManagementProjectController::class, 'answerQuestion'])->name('projects.questions.answer');
 
         // Main Project Resource
         Route::resource('projects', ManagementProjectController::class);
@@ -194,6 +264,8 @@ Route::middleware(['auth', 'verified', 'role:user,finance,management,superadmin'
         Route::post('/wellbeing/discuss', [UserDashboard::class, 'discuss'])->name('wellbeing.discuss');
         Route::post('/wellbeing/checkin-auto-fill', [UserDashboard::class, 'autoFillCheckin'])->name('wellbeing.checkin-auto-fill');
         Route::post('/wellbeing/auto-journal', [UserDashboard::class, 'autoJournal'])->name('wellbeing.auto-journal');
+        Route::post('/wellbeing/award-points', [UserDashboard::class, 'awardPoints'])->name('wellbeing.award-points');
+        Route::post('/wellbeing/generate-logic-quiz', [UserDashboard::class, 'generateLogicQuiz'])->name('wellbeing.generate-logic-quiz');
     });
 
 

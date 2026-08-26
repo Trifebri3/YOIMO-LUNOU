@@ -822,4 +822,91 @@ class DashboardController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Catat perolehan poin dari game / aktivitas ketenangan
+     */
+    public function awardPoints(Request $request): JsonResponse
+    {
+        $request->validate([
+            'points' => ['required', 'integer', 'min:-200', 'max:200'],
+            'description' => ['required', 'string', 'max:255'],
+        ]);
+
+        $userId = Auth::id();
+        $points = $request->input('points');
+        $description = $request->input('description');
+
+        try {
+            $userPoint = \App\Services\GamificationService::addPoints(
+                $userId,
+                $points,
+                'Game Ketenangan',
+                null,
+                null,
+                null,
+                $description
+            );
+
+            return response()->json([
+                'success' => true,
+                'total_points' => $userPoint->total_points,
+                'level' => $userPoint->level,
+                'message' => 'Poin berhasil dicatat di database!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mencatat poin: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate kuis logika seru bebas emoji menggunakan LUNOU AI
+     */
+    public function generateLogicQuiz(Request $request): JsonResponse
+    {
+        try {
+            $aiService = app(\App\Services\AIService::class);
+            $systemPrompt = "Anda adalah LUNOU, asisten asah otak untuk pemulihan mental dan fokus kerja. "
+                . "Buatlah satu soal teka-teki logika atau tebak-tebakan logika yang menarik, tidak terlalu panjang, dan menantang logika berpikir.\n\n"
+                . "Soal dan pilihan jawaban HARUS dalam Bahasa Indonesia yang bersih, ramah, dan BEBAS DARI SEGALA EMOTIKON/EMOJI.\n\n"
+                . "Respon Anda HARUS berupa JSON murni dengan format:\n"
+                . "{\n"
+                . "  \"question\": \"Teks pertanyaan teka-teki logika...\",\n"
+                . "  \"options\": [\"Pilihan A\", \"Pilihan B\", \"Pilihan C\", \"Pilihan D\"],\n"
+                . "  \"answerIndex\": 0,\n"
+                . "  \"explanation\": \"Penjelasan singkat mengapa jawaban tersebut benar...\"\n"
+                . "}\n"
+                . "Jangan berikan format markdown atau pembungkus kode.";
+
+            $res = $aiService->chat([
+                'system' => "Anda adalah pembuat soal teka-teki logika IT professional yang ramah dan bebas emoji.",
+                'message' => $systemPrompt,
+                'temperature' => 0.7
+            ]);
+
+            $cleanJson = trim($res->content);
+            if (str_starts_with($cleanJson, '```')) {
+                $cleanJson = preg_replace('/^```(?:json)?|```$/m', '', $cleanJson);
+            }
+            $cleanJson = trim($cleanJson);
+
+            $quiz = json_decode($cleanJson, true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($quiz)) {
+                throw new \Exception("Invalid JSON format from AI response: " . $res->content);
+            }
+
+            return response()->json([
+                'success' => true,
+                'quiz' => $quiz
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal merancang kuis logika: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

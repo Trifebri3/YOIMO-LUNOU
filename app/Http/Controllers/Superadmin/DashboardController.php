@@ -12,7 +12,11 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        return view('superadmin.dashboard');
+        $demoTracks = \Illuminate\Support\Facades\DB::table('demo_tracks')
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        return view('superadmin.dashboard', compact('demoTracks'));
     }
 
     public function notificationSettings(): View

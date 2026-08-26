@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Project;
 use App\Models\ProjectActivityLog;
 use App\Models\ProjectAgenda;
+use App\Models\ProjectRoadmap;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -239,6 +240,132 @@ class AgendaController extends Controller
                 'success' => false,
                 'message' => 'Gagal merancang agenda: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function generateBulkAgendasAi(Request $request, Project $project)
+    {
+        $userId = Auth::id();
+        $roadmaps = ProjectRoadmap::where('project_id', $project->id)->orderBy('start_date')->get();
+
+        if ($roadmaps->isEmpty()) {
+            return back()->with('error', 'Silakan buat alur linimasa/roadmap proyek terlebih dahulu sebelum men-generate agenda otomatis.');
+        }
+
+        $projectName = $project->name;
+        $projectBrief = $project->description ?: 'Tidak ada deskripsi detail.';
+        $customInstruction = $request->input('instruction') ?: 'Tidak ada instruksi khusus.';
+
+        // Fetch team members list
+        $assignedUserIds = collect($project->team_matrix ?? [])->pluck('user_id')->unique();
+        $teamMembers = User::whereIn('id', $assignedUserIds)->get();
+        if ($teamMembers->isEmpty()) {
+            $teamMembers = User::whereIn('role', ['user', 'finance', 'management'])->get();
+        }
+
+        $membersList = "";
+        foreach ($teamMembers as $u) {
+            $membersList .= "- ID: {$u->id}, Nama: {$u->name}, Email: {$u->email}, Role: {$u->role}\n";
+        }
+
+        // Build Roadmap details for prompt context
+        $roadmapContext = "";
+        foreach ($roadmaps as $idx => $rm) {
+            $roadmapContext .= "FASE INDEX {$idx}:\n"
+                . "- Judul: {$rm->title}\n"
+                . "- Deskripsi: {$rm->description}\n"
+                . "- Tanggal Mulai: " . $rm->start_date->format('Y-m-d') . "\n"
+                . "- Tanggal Selesai: " . $rm->end_date->format('Y-m-d') . "\n\n";
+        }
+
+        $systemPrompt = "Anda adalah Asisten Proyek AI bernama LUNOU yang bertindak sebagai Senior IT Project Manager dan Scrum Master profesional. Anda menguasai Systems Thinking, Design Thinking, dan Human-First.\n\n"
+            . "Tugas Anda adalah menyusun kalender agenda pertemuan rutin (seperti Daily Standup, Weekly Progress Review, Sprint Planning, Sprint Retrospective) secara otomatis berbasis rentang waktu proyek dan alur linimasa (roadmap) berikut.\n\n"
+            . "DETAIL PROYEK:\n"
+            . "- Nama Proyek: {$projectName}\n"
+            . "- Deskripsi/Brief Proyek: {$projectBrief}\n\n"
+            . "ALUR LINIMASA (ROADMAP) PROYEK:\n"
+            . "{$roadmapContext}"
+            . "INSTRUKSI KHUSUS DARI USER:\n"
+            . "{$customInstruction}\n\n"
+            . "ATURAN MERANCANG AGENDA/MEETING:\n"
+            . "1. Rancanglah pertemuan rutin mingguan (Weekly Progress Review) di setiap akhir minggu selama masa proyek, dan pertemuan koordinasi penting di awal dan akhir setiap fase linimasa.\n"
+            . "2. Setiap agenda harus memiliki detail judul yang profesional, rundown/agenda singkat yang informatif.\n"
+            . "3. Tentukan kategori kegiatan secara persis. Pilihan kategori: 'Meeting Online', 'Meeting Offline', 'Workshop & Pelatihan', 'Lainnya'.\n"
+            . "4. Tanggal mulai (`start_date`) wajib berada di dalam rentang tanggal proyek/fase.\n"
+            . "5. Tentukan jam mulai (`start_time`) dan jam selesai (`end_time`) dalam format HH:MM secara masuk akal (misal 09:00 hingga 10:00).\n"
+            . "6. Jika kategori 'Meeting Online', set `location_type` menjadi 'online' dan sediakan `meeting_url` berupa link mock (misal: https://meet.google.com/abc-defg-hij).\n"
+            . "7. Pilih anggota tim yang paling relevan untuk diundang (`attendee_ids`) berupa array ID user dari daftar di bawah.\n"
+            . "8. Kembalikan hasilnya dalam format JSON murni berupa array objek dengan struktur:\n"
+            . "[\n"
+            . "  {\n"
+            . "    \"title\": \"Judul Agenda Rapat\",\n"
+            . "    \"description\": \"Deskripsi atau agenda bahasan...\",\n"
+            . "    \"category\": \"Meeting Online\",\n"
+            . "    \"start_date\": \"YYYY-MM-DD\",\n"
+            . "    \"end_date\": \"YYYY-MM-DD\",\n"
+            . "    \"start_time\": \"09:00\",\n"
+            . "    \"end_time\": \"10:00\",\n"
+            . "    \"location_type\": \"online\",\n"
+            . "    \"meeting_url\": \"https://meet.google.com/abc-defg-hij\",\n"
+            . "    \"location_address\": null,\n"
+            . "    \"attendee_ids\": [1, 2]\n"
+            . "  },\n"
+            . "  ...\n"
+            . "]\n"
+            . "Daftar Tim Anggota yang tersedia:\n{$membersList}\n"
+            . "Jangan sertakan markdown, pembungkus ```json, atau penjelasan lainnya.";
+
+        try {
+            $aiService = app(\App\Services\AIService::class);
+            $response = $aiService->chat([
+                'system' => "Anda adalah Asisten Proyek AI bernama LUNOU. Tugas Anda adalah menyusun kalender pertemuan rutin proyek IT berformat JSON murni.",
+                'message' => $systemPrompt,
+                'temperature' => 0.2
+            ]);
+
+            $content = trim($response->content);
+            if (str_starts_with($content, '```')) {
+                $content = preg_replace('/^```(?:json)?|```$/m', '', $content);
+            }
+            $content = trim($content);
+
+            $agendas = json_decode($content, true);
+
+            if (!is_array($agendas)) {
+                throw new \Exception("Format respon AI tidak valid: " . $content);
+            }
+
+            $createdCount = 0;
+            foreach ($agendas as $agendaData) {
+                ProjectAgenda::create([
+                    'project_id'       => $project->id,
+                    'created_by'       => $userId,
+                    'title'            => $agendaData['title'],
+                    'description'      => $agendaData['description'] ?? null,
+                    'category'         => $agendaData['category'] ?? 'Meeting Online',
+                    'start_date'       => $agendaData['start_date'],
+                    'end_date'         => $agendaData['end_date'] ?? $agendaData['start_date'],
+                    'start_time'       => $agendaData['start_time'] ?? null,
+                    'end_time'         => $agendaData['end_time'] ?? null,
+                    'recurrence'       => 'once',
+                    'location_type'    => $agendaData['location_type'] ?? 'online',
+                    'meeting_url'      => $agendaData['meeting_url'] ?? null,
+                    'location_address' => $agendaData['location_address'] ?? null,
+                    'attendee_ids'     => $agendaData['attendee_ids'] ?? [],
+                    'status'           => 'Scheduled',
+                ]);
+                $createdCount++;
+            }
+
+            // Catat Audit Log
+            ProjectActivityLog::record($project->id, 'Agenda', 'CREATE', "Men-generate secara otomatis {$createdCount} agenda pertemuan rutin proyek menggunakan LUNOU AI.");
+
+            return redirect()->route('management.projects.agendas.index', $project->id)
+                ->with('success', "Berhasil men-generate {$createdCount} agenda baru secara otomatis menggunakan LUNOU AI.");
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Failed to generate Agendas via AI: " . $e->getMessage());
+            return back()->with('error', 'Gagal memproses pembuatan agenda otomatis: ' . $e->getMessage());
         }
     }
 }

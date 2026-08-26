@@ -26,13 +26,20 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
-                <a href="{{ route('management.projects.tasks.index', $project->id) }}" class="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition-all">
+                <button type="button" onclick="openGenerateAgendasModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold rounded-xl hover:from-indigo-700 hover:to-violet-700 shadow-sm flex items-center gap-2 hover:shadow transition-all cursor-pointer font-sans">
+                    <svg class="w-3.5 h-3.5 animate-pulse text-indigo-200" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Generate Agenda via LUNOU AI</span>
+                </button>
+
+                <a href="{{ route('management.projects.tasks.index', $project->id) }}" class="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition-all font-sans">
                     Papan Tugas
                 </a>
-                <a href="{{ route('management.projects.roadmaps.index', $project->id) }}" class="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition-all">
+                <a href="{{ route('management.projects.roadmaps.index', $project->id) }}" class="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition-all font-sans">
                     Linimasa
                 </a>
-                <a href="{{ route('management.projects.show', $project->id) }}" class="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition-all">
+                <a href="{{ route('management.projects.show', $project->id) }}" class="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition-all font-sans">
                     Detail Project
                 </a>
             </div>
@@ -574,6 +581,45 @@
             btnRun.innerText = 'Rancang';
         }
     }
+
+    function openGenerateAgendasModal() {
+        document.getElementById('generateAgendasModal').classList.remove('hidden');
+    }
+
+    function closeGenerateAgendasModal() {
+        document.getElementById('generateAgendasModal').classList.add('hidden');
+    }
 </script>
 @endpush
+
+<!-- Modal AI Generate Agendas (Custom Prompt) -->
+<div id="generateAgendasModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-7 shadow-2xl border border-slate-100 space-y-5">
+        <div class="flex items-center justify-between">
+            <h3 class="text-sm font-black text-slate-900 flex items-center gap-2">
+                <svg class="w-4 h-4 text-indigo-500 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+                </svg>
+                <span class="font-sans">Generate Agenda via LUNOU AI</span>
+            </h3>
+            <button type="button" onclick="closeGenerateAgendasModal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg cursor-pointer">&times;</button>
+        </div>
+
+        <form action="{{ route('management.projects.agendas.generate-bulk-ai', $project->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin men-generate jadwal pertemuan proyek secara otomatis? Rapat baru akan ditambahkan tanpa menghapus agenda yang sudah ada.')" class="space-y-4">
+            @csrf
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5 font-sans">Instruksi Khusus (Opsional)</label>
+                <textarea name="instruction" rows="3" placeholder="Contoh: Jadwalkan rapat evaluasi setiap hari Jumat siang, tambahkan agenda olahraga bareng setiap bulan..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-indigo-500 font-sans"></textarea>
+                <p class="text-[10px] text-slate-400 mt-1 font-sans">Kosongkan jika ingin LUNOU AI menjadwalkan pertemuan rutin standard mengikuti fase-fase linimasa proyek secara otomatis.</p>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeGenerateAgendasModal()" class="px-4 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl font-sans cursor-pointer">Batal</button>
+                <button type="submit" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-bold rounded-xl shadow-md hover:from-indigo-700 hover:to-violet-700 font-sans cursor-pointer">
+                    Mulai Generate
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection
