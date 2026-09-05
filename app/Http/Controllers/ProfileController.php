@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\UserPoint;
+use App\Models\UserPointLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -18,12 +20,12 @@ class ProfileController extends Controller
     public function edit(Request $request): View
     {
         $userId = Auth::id();
-        $userPoint = \App\Models\UserPoint::firstOrCreate(
+        $userPoint = UserPoint::firstOrCreate(
             ['user_id' => $userId],
             ['total_points' => 0, 'level' => 1, 'login_streak' => 0]
         );
 
-        $pointLogs = \App\Models\UserPointLog::where('user_id', $userId)
+        $pointLogs = UserPointLog::where('user_id', $userId)
             ->with(['company', 'project'])
             ->latest()
             ->get();

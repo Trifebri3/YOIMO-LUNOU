@@ -13,12 +13,12 @@ return new class extends Migration
             $table->dateTime('started_at')->nullable()->after('due_date');
             $table->unsignedInteger('duration_minutes')->default(0)->after('started_at'); // Total durasi pengerjaan dalam menit
             $table->unsignedTinyInteger('progress_percentage')->default(0)->after('duration_minutes'); // 0 - 100%
-            
+
             // Evaluasi kendala & hambatan
             $table->text('obstacles_faced')->nullable()->after('submission_notes'); // Kendala & Hambatan
             $table->text('self_evaluation')->nullable()->after('obstacles_faced');  // Evaluasi Diri
             $table->string('submission_timing_status')->nullable()->after('submitted_at'); // 'On Time' atau 'Overdue'
-            
+
             // Catatan Revisi / Penolakan Management
             $table->text('revision_notes')->nullable()->after('submission_timing_status');
         });
@@ -28,13 +28,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_task_id')->constrained('project_tasks')->cascadeOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            
+
             $table->unsignedTinyInteger('progress_percentage'); // misal: 30%, 60%, 100%
             $table->text('notes'); // Catatan progress kecil hari ini
             $table->string('attachment_url')->nullable();
             $table->string('attachment_file')->nullable();
             $table->text('obstacles')->nullable(); // Kendala saat pengerjaan bertahap
-            
+
             $table->timestamps();
         });
     }
@@ -45,7 +45,7 @@ return new class extends Migration
         Schema::table('project_tasks', function (Blueprint $table) {
             $table->dropColumn([
                 'started_at', 'duration_minutes', 'progress_percentage',
-                'obstacles_faced', 'self_evaluation', 'submission_timing_status', 'revision_notes'
+                'obstacles_faced', 'self_evaluation', 'submission_timing_status', 'revision_notes',
             ]);
         });
     }

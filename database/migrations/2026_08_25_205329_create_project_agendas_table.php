@@ -12,11 +12,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
-            
+
             // Info Agenda
             $table->string('title');
             $table->text('description')->nullable();
-            
+
             // Kategori Beragam
             $table->enum('category', [
                 'Meeting Online',
@@ -26,7 +26,7 @@ return new class extends Migration
                 'Nonton & Hiburan',
                 'Roadshow & Kunjungan',
                 'Workshop & Pelatihan',
-                'Lainnya'
+                'Lainnya',
             ])->default('Meeting Online');
 
             // Tanggal & Waktu

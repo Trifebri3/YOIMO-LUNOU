@@ -11,7 +11,6 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class LocalAIController extends Controller
 {
@@ -24,14 +23,14 @@ class LocalAIController extends Controller
         $prompt = $request->prompt;
 
         // --- PARSING ALGORITMA (LOCAL DETERMINISTIC NLP) ---
-        
+
         // 1. Parse Project Name
         // Pattern: "buat project [Nama]" or "project [Nama]"
         $projectName = null;
         if (preg_match('/(?:buat\s+project|project)\s+([^,\.\n\r]+)/i', $prompt, $matches)) {
             $projectName = trim($matches[1]);
         }
-        
+
         // 2. Parse Client Name
         // Pattern: "client [Nama]" or "klien [Nama]"
         $clientName = null;
@@ -66,26 +65,26 @@ class LocalAIController extends Controller
 
         // Set defaults if parsing was blank
         if (empty($projectName)) {
-            $projectName = "Project Otomatis AI " . date('d M Y H:i');
+            $projectName = 'Project Otomatis AI '.date('d M Y H:i');
         }
 
         // Get default company profile for this manager
         $companyId = CompanyProfile::where('manager_id', Auth::id())->value('id');
-        if (!$companyId) {
+        if (! $companyId) {
             $companyId = CompanyProfile::first()->id ?? null;
         }
 
         // Create Project
         $project = Project::create([
             'company_profile_id' => $companyId,
-            'created_by'         => Auth::id(),
-            'name'               => $projectName,
-            'client_name'        => $clientName ?? 'Internal Client',
-            'category'           => 'Software Development',
-            'status'             => 'Active',
-            'priority'           => 'Medium',
-            'current_stage'      => 'Planning',
-            'budget'             => $budget,
+            'created_by' => Auth::id(),
+            'name' => $projectName,
+            'client_name' => $clientName ?? 'Internal Client',
+            'category' => 'Software Development',
+            'status' => 'Active',
+            'priority' => 'Medium',
+            'current_stage' => 'Planning',
+            'budget' => $budget,
         ]);
 
         // Resolve Assignee User
@@ -100,25 +99,27 @@ class LocalAIController extends Controller
                 'team_matrix' => [
                     [
                         'user_id' => $assignedUser->id,
-                        'name'    => $assignedUser->name,
-                        'role'    => 'Developer'
-                    ]
-                ]
+                        'name' => $assignedUser->name,
+                        'role' => 'Developer',
+                    ],
+                ],
             ]);
         }
 
         // Create Tasks
         $createdTasksCount = 0;
         foreach ($tasks as $taskTitle) {
-            if (empty($taskTitle)) continue;
+            if (empty($taskTitle)) {
+                continue;
+            }
 
             ProjectTask::create([
-                'project_id'  => $project->id,
-                'title'       => $taskTitle,
-                'priority'    => 'Normal',
-                'status'      => 'Todo',
+                'project_id' => $project->id,
+                'title' => $taskTitle,
+                'priority' => 'Normal',
+                'status' => 'Todo',
                 'assigned_to' => $assignedUser->id ?? null,
-                'created_by'  => Auth::id(),
+                'created_by' => Auth::id(),
             ]);
             $createdTasksCount++;
         }
@@ -126,7 +127,8 @@ class LocalAIController extends Controller
         // Record Audit Log
         ProjectActivityLog::record($project->id, 'Project', 'CREATE', "AI Generator menerbitkan project '{$projectName}' dengan {$createdTasksCount} tugas");
 
-        $assignedMsg = $assignedUser ? " & ditugaskan ke {$assignedUser->name}" : "";
+        $assignedMsg = $assignedUser ? " & ditugaskan ke {$assignedUser->name}" : '';
+
         return redirect()->route('management.projects.tasks.index', $project->id)
             ->with('success', "AI Sukses: Project '{$projectName}' berhasil dibuat dengan {$createdTasksCount} tugas{$assignedMsg}.");
     }

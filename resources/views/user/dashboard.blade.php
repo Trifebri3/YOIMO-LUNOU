@@ -259,13 +259,19 @@
                                 <div class="flex items-center gap-2">
                                     @if($task->status === 'Completed')
                                         @php
-                                            $liTaskShareUrl = "https://www.linkedin.com/sharing/share-offsite/?url=" . urlencode(url('/'));
+                                            $publicTaskUrl = route('public.task.show', $task->id);
+                                            $taskProjectName = $task->project?->name ?? 'Proyek';
+                                            $cleanTitle = addslashes($task->title);
+                                            $cleanProject = addslashes($taskProjectName);
+                                            $taskCaption = "🎯 Senang sekali dapat menyelesaikan tugas \"{$cleanTitle}\" pada proyek \"{$cleanProject}\" di Yoimo Workspace!\n\n📌 Rincian Pencapaian:\n• Tugas: {$cleanTitle}\n• Proyek: {$cleanProject}\n• Status: Selesai 100% & Terverifikasi\n\nLihat bukti verifikasi penyelesaian tugas saya secara publik di sini:\n{$publicTaskUrl}\n\n#YoimoWorkspace #Productivity #ProjectManagement #WorkLifeHarmony #Achievement #KerjaCerdas";
                                         @endphp
-                                        <a href="{{ $liTaskShareUrl }}" target="_blank" 
-                                           class="px-3.5 py-2 bg-blue-600 hover:bg-blue-750 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                                        <button type="button" 
+                                           onclick="openLinkedInShareModal('{{ $cleanTitle }}', 'Proyek: {{ $cleanProject }}', '{{ $publicTaskUrl }}', `{{ $taskCaption }}`)"
+                                           class="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5 group"
                                            title="Bagikan penyelesaian tugas ke LinkedIn">
+                                            <svg class="w-3.5 h-3.5 fill-current opacity-90 group-hover:opacity-100" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
                                             <span>Share LinkedIn</span>
-                                        </a>
+                                        </button>
                                     @endif
                                     <a href="{{ route('user.projects.show', [$task->project_id, 'tab' => 'tasks']) }}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-1.5">
                                         <span>Buka Lembar Kerja</span>
@@ -1186,13 +1192,18 @@
                                                 </a>
                                                 
                                                 @php
-                                                    $publicUrl = urlencode(route('public.award.show', $aw->share_token));
-                                                    $liShareUrl = "https://www.linkedin.com/sharing/share-offsite/?url=" . $publicUrl;
+                                                    $awardUrl = route('public.award.show', $aw->share_token);
+                                                    $awardCleanTitle = addslashes($aw->title);
+                                                    $awardDateStr = $aw->issued_date ? $aw->issued_date->format('d F Y') : date('d F Y');
+                                                    $awardCaption = "🏆 Penghargaan Resmi Diraih di Yoimo Workspace!\n\nSaya bangga menerima penghargaan: \"{$awardCleanTitle}\"\n📅 Tanggal: {$awardDateStr}\n✨ Diberikan atas dedikasi kerja dan ritme produktivitas yang seimbang.\n\nVerifikasi sertifikat digital resmi:\n{$awardUrl}\n\n#YoimoWorkspace #Award #Achievement #WorkLifeBalance #Recognition #ProfessionalGrowth";
                                                 @endphp
-                                                <a href="{{ $liShareUrl }}" target="_blank" 
-                                                   class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-lg transition-all">
-                                                    Share LinkedIn
-                                                </a>
+                                                <button type="button" 
+                                                   onclick="openLinkedInShareModal('Penghargaan: {{ $awardCleanTitle }}', 'Sertifikat Resmi Yoimo', '{{ $awardUrl }}', `{{ $awardCaption }}`)"
+                                                   class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded-lg transition-all flex items-center gap-1 group"
+                                                   title="Bagikan sertifikat ke LinkedIn">
+                                                    <svg class="w-3 h-3 fill-current opacity-90 group-hover:opacity-100" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+                                                    <span>Share LinkedIn</span>
+                                                </button>
                                             </div>
                                         </div>
                                     @endforeach

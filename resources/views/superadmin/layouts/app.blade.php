@@ -14,7 +14,12 @@
     <!-- PWA Manifest & Meta -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4f46e5">
-    <link rel="apple-touch-icon" href="/logokotak.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Yoimo">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
 
     <!-- Scripts & Tailwind CSS -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -27,7 +32,7 @@
     <div id="sidebar-overlay" class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-40 hidden xl:hidden" onclick="toggleSidebar()"></div>
 
     <!-- Main Content Wrapper -->
-    <div class="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
+    <div class="flex-1 flex flex-col min-w-0 pb-20 xl:pb-0">
 
         <!-- Header Topbar Modular -->
         @include('superadmin.layouts.partials.header')
@@ -42,8 +47,8 @@
 
     </div>
 
-    <!-- Mobile Bottom Navigation Bar -->
-    <div class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-100 z-40 flex items-center justify-around py-2.5 px-4 md:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl">
+    <!-- Mobile Bottom Navigation Bar (xl:hidden) -->
+    <div class="fixed bottom-0 inset-x-0 bg-white border-t border-slate-100 z-40 flex items-center justify-around py-2.5 px-4 xl:hidden shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-2xl">
         <!-- Home / Dashboard -->
         <a href="{{ route('superadmin.dashboard') }}" class="flex flex-col items-center justify-center gap-0.5 {{ Request::routeIs('superadmin.dashboard') ? 'text-emerald-600 font-bold' : 'text-slate-400 hover:text-emerald-600' }} transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
@@ -92,6 +97,7 @@
     </script>
     @include('layouts.partials.toast')
     @include('layouts.partials.chatbot')
+    @include('layouts.partials.quick_nav_modal')
     @stack('scripts')
 </body>
 </html>

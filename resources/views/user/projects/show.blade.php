@@ -34,6 +34,62 @@
         </div>
     @endif
 
+    <!-- Sticky Quick Sub-Navigation Bar for Proyek -->
+    <div class="bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-2xl p-3 sm:p-4 shadow-xs flex flex-wrap items-center justify-between gap-3 sticky top-20 z-20">
+        <!-- Tombol Kembali & Breadcrumb Lengkap -->
+        <div class="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
+            <a href="{{ route('user.dashboard') }}" 
+               class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0"
+               title="Kembali ke Ruang Pribadi">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                <span>Dashboard</span>
+            </a>
+
+            <div class="flex items-center gap-1.5 text-xs text-slate-400 font-semibold truncate">
+                <span>/</span>
+                @if($project->company)
+                    <a href="{{ route('user.company.workspace', $project->company->id) }}" class="text-slate-600 hover:text-indigo-600 truncate max-w-[120px] sm:max-w-none">
+                        {{ $project->company->company_name }}
+                    </a>
+                    <span>/</span>
+                @endif
+                <span class="text-indigo-950 font-black truncate max-w-[150px] sm:max-w-none">{{ $project->name }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Switch Project Dropdown & Action -->
+        <div class="flex items-center gap-2">
+            @if(isset($navProjects) && $navProjects->count() > 1)
+                <div class="relative">
+                    <button type="button" onclick="document.getElementById('quickProjSwitchDropdown').classList.toggle('hidden')" 
+                            class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs">
+                        <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                        <span class="hidden sm:inline">Pindah Proyek</span>
+                        <span class="sm:hidden">Proyek</span>
+                        <svg class="w-3 h-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+
+                    <div id="quickProjSwitchDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 space-y-1">
+                        <span class="text-[9px] font-black uppercase tracking-wider text-slate-400 px-2.5 py-1 block">Pilih Proyek Lain:</span>
+                        <div class="max-h-48 overflow-y-auto space-y-0.5">
+                            @foreach($navProjects as $otherPj)
+                                <a href="{{ route('user.projects.show', $otherPj->id) }}" 
+                                   class="flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-bold transition-all {{ $otherPj->id === $project->id ? 'bg-indigo-50 text-indigo-800' : 'text-slate-600 hover:bg-slate-50' }}">
+                                    <span class="truncate">{{ $otherPj->name }}</span>
+                                    <span class="text-[9px] px-1.5 py-0.2 bg-slate-100 rounded text-slate-500">{{ $otherPj->progress_percentage }}%</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <button type="button" onclick="openQuickNavModal()" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition-all" title="Buka Pencarian Cepat (Ctrl+K)">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </button>
+        </div>
+    </div>
+
     <!-- 1. Header Proyek Banner -->
     <div class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
         <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
@@ -62,8 +118,8 @@
             </div>
         </div>
 
-        <!-- 2. Navigasi 7 Tab Lengkap -->
-        <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
+        <!-- 2. Navigasi 7 Tab Lengkap (Horizontal Scrollable pada Layar HP/iPad) -->
+        <div class="pt-4 border-t border-slate-100 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
             <a href="{{ route('user.projects.show', [$project->id, 'tab' => 'overview']) }}" 
                class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 {{ $activeTab === 'overview' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100' }}">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"></path></svg>
@@ -735,12 +791,19 @@
                                 @endif
 
                                 @if($task->status === 'Completed')
-                                    <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ urlencode(url('/')) }}" 
-                                       target="_blank" 
-                                       class="w-full text-center py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+                                    @php
+                                        $publicTaskUrl = route('public.task.show', $task->id);
+                                        $taskProjName = $project->name ?? 'Proyek';
+                                        $cleanTitle = addslashes($task->title);
+                                        $cleanProj = addslashes($taskProjName);
+                                        $taskCaption = "🎯 Senang sekali dapat menyelesaikan tugas \"{$cleanTitle}\" pada proyek \"{$cleanProj}\" di Yoimo Workspace!\n\n📌 Rincian Pencapaian:\n• Tugas: {$cleanTitle}\n• Proyek: {$cleanProj}\n• Status: Selesai 100% & Terverifikasi\n\nLihat bukti verifikasi penyelesaian tugas saya secara publik di sini:\n{$publicTaskUrl}\n\n#YoimoWorkspace #Productivity #ProjectManagement #WorkLifeHarmony #Achievement #KerjaCerdas";
+                                    @endphp
+                                    <button type="button" 
+                                       onclick="openLinkedInShareModal('{{ $cleanTitle }}', 'Proyek: {{ $cleanProj }}', '{{ $publicTaskUrl }}', `{{ $taskCaption }}`)"
+                                       class="w-full text-center py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 group">
+                                        <svg class="w-4 h-4 fill-current opacity-90 group-hover:opacity-100" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
                                         <span>Bagikan ke LinkedIn</span>
-                                    </a>
+                                    </button>
                                 @endif
                             </div>
                         </div>

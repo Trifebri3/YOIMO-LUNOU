@@ -67,18 +67,13 @@ class ProjectController extends Controller
 
         $companyId = $selectedCompany ? $selectedCompany->id : null;
 
-        // Ambil hanya user yang ter-embed di company ini (termasuk manager) dengan role 'user', 'finance', atau 'management'
-        $managerId = $selectedCompany ? $selectedCompany->manager_id : null;
-        $teamMembers = User::where(function ($query) use ($companyId, $managerId) {
-            $query->where('company_profile_id', $companyId);
-            if ($managerId) {
-                $query->orWhere('id', $managerId);
-            }
-        })
-            ->whereIn('role', ['user', 'finance', 'management'])
-            ->orderBy('role', 'asc')
-            ->orderBy('name', 'asc')
-            ->get(['id', 'name', 'email', 'position', 'role', 'avatar']);
+        // Ambil semua user yang bergabung di company ini (pivot, legacy, manager)
+        $teamMembers = $selectedCompany
+            ? $selectedCompany->allMembers()
+                ->filter(fn ($u) => in_array($u->role, ['user', 'finance', 'management']))
+                ->sortBy('name')
+                ->values()
+            : collect();
 
         return view('management.projects.create', compact('selectedCompany', 'teamMembers'));
     }
@@ -201,18 +196,14 @@ class ProjectController extends Controller
 
         $companyId = $project->company_profile_id;
 
-        // Ambil hanya user yang ter-embed di company ini (termasuk manager) dengan role 'user', 'finance', atau 'management'
-        $managerId = CompanyProfile::where('id', $companyId)->value('manager_id');
-        $teamMembers = User::where(function ($query) use ($companyId, $managerId) {
-            $query->where('company_profile_id', $companyId);
-            if ($managerId) {
-                $query->orWhere('id', $managerId);
-            }
-        })
-            ->whereIn('role', ['user', 'finance', 'management'])
-            ->orderBy('role', 'asc')
-            ->orderBy('name', 'asc')
-            ->get(['id', 'name', 'email', 'position', 'role', 'avatar']);
+        // Ambil semua user yang bergabung di company ini (pivot, legacy, manager)
+        $company = $project->company ?? CompanyProfile::find($companyId);
+        $teamMembers = $company
+            ? $company->allMembers()
+                ->filter(fn ($u) => in_array($u->role, ['user', 'finance', 'management']))
+                ->sortBy('name')
+                ->values()
+            : collect();
 
         return view('management.projects.edit', compact('project', 'companies', 'teamMembers'));
     }

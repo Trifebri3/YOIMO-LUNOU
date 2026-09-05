@@ -18,7 +18,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete(); // User Finance / Pengunggah
-            
+
             $table->string('title'); // Contoh: "Pembelian Domain & Server AWS 1 Tahun"
             $table->enum('category', [
                 'Infrastruktur & Server',
@@ -27,7 +27,7 @@ return new class extends Migration
                 'Peralatan & Hardware',
                 'Honorarium & Jasa',
                 'Marketing & Promosi',
-                'Lainnya'
+                'Lainnya',
             ])->default('Operasional & Konsumsi');
 
             $table->decimal('amount', 15, 2);

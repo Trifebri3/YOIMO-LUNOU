@@ -21,7 +21,7 @@ return new class extends Migration
                 'Desain & Brand Asset',
                 'Laporan & Riset',
                 'Template & Format',
-                'Lainnya'
+                'Lainnya',
             ])->default('SOP & Panduan Kerja');
 
             // Sifat Panduan (Wajib atau Opsional)
@@ -29,7 +29,7 @@ return new class extends Migration
 
             // Jenis Format Dokumen
             $table->enum('doc_type', ['file', 'link', 'article'])->default('file');
-            
+
             $table->string('file_path')->nullable(); // File upload (PDF/Doc/Zip)
             $table->string('file_name_original')->nullable();
             $table->string('file_size')->nullable();

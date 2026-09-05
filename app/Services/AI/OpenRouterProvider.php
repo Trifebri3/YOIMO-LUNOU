@@ -3,15 +3,17 @@
 namespace App\Services\AI;
 
 use App\Contracts\AIProviderInterface;
-use App\Support\AI\AIResponse;
 use App\Exceptions\AIProviderException;
+use App\Support\AI\AIResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class OpenRouterProvider implements AIProviderInterface
 {
     protected string $apiKey;
+
     protected string $model;
+
     protected string $baseUrl;
 
     public function __construct(string $apiKey, string $model, ?string $baseUrl = null)
@@ -35,18 +37,18 @@ class OpenRouterProvider implements AIProviderInterface
 
         try {
             $response = Http::withoutVerifying()->withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Authorization' => 'Bearer '.$this->apiKey,
                 'Content-Type' => 'application/json',
                 'HTTP-Referer' => url('/'),
                 'X-Title' => 'Yoimo Ecosystem',
             ])
-            ->timeout(30)
-            ->post($this->baseUrl . '/chat/completions', [
-                'model' => $this->model,
-                'messages' => $messages,
-                'temperature' => $payload['temperature'] ?? 0.7,
-                'max_tokens' => $payload['max_tokens'] ?? null,
-            ]);
+                ->timeout(30)
+                ->post($this->baseUrl.'/chat/completions', [
+                    'model' => $this->model,
+                    'messages' => $messages,
+                    'temperature' => $payload['temperature'] ?? 0.7,
+                    'max_tokens' => $payload['max_tokens'] ?? null,
+                ]);
 
             if ($response->failed()) {
                 $status = $response->status();
@@ -75,8 +77,8 @@ class OpenRouterProvider implements AIProviderInterface
             if ($e instanceof AIProviderException) {
                 throw $e;
             }
-            Log::error('OpenRouter unexpected exception: ' . $e->getMessage());
-            throw new AIProviderException('Connection failure or timeout to OpenRouter: ' . $e->getMessage(), 500, $e);
+            Log::error('OpenRouter unexpected exception: '.$e->getMessage());
+            throw new AIProviderException('Connection failure or timeout to OpenRouter: '.$e->getMessage(), 500, $e);
         }
     }
 
@@ -89,22 +91,22 @@ class OpenRouterProvider implements AIProviderInterface
     {
         try {
             $response = Http::withoutVerifying()->withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Authorization' => 'Bearer '.$this->apiKey,
                 'HTTP-Referer' => url('/'),
                 'X-Title' => 'Yoimo Ecosystem',
             ])
-            ->timeout(10)
-            ->post($this->baseUrl . '/chat/completions', [
-                'model' => $this->model,
-                'messages' => [
-                    ['role' => 'user', 'content' => 'ping']
-                ],
-                'max_tokens' => 5
-            ]);
+                ->timeout(10)
+                ->post($this->baseUrl.'/chat/completions', [
+                    'model' => $this->model,
+                    'messages' => [
+                        ['role' => 'user', 'content' => 'ping'],
+                    ],
+                    'max_tokens' => 5,
+                ]);
 
             if ($response->failed()) {
                 $err = $response->json();
-                $msg = $err['error']['message'] ?? 'HTTP ' . $response->status() . ': ' . $response->body();
+                $msg = $err['error']['message'] ?? 'HTTP '.$response->status().': '.$response->body();
                 throw new AIProviderException($msg, $response->status());
             }
 
@@ -113,7 +115,7 @@ class OpenRouterProvider implements AIProviderInterface
             if ($e instanceof AIProviderException) {
                 throw $e;
             }
-            throw new AIProviderException('Connection error: ' . $e->getMessage(), 500, $e);
+            throw new AIProviderException('Connection error: '.$e->getMessage(), 500, $e);
         }
     }
 }

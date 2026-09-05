@@ -50,17 +50,17 @@ class ExpenseController extends Controller
      */
     public function toggleTransparency(Request $request, Project $project): RedirectResponse
     {
-        $project->is_financial_transparent = !$project->is_financial_transparent;
+        $project->is_financial_transparent = ! $project->is_financial_transparent;
         $project->save();
 
         $statusText = $project->is_financial_transparent ? 'diaktifkan (terbuka untuk seluruh tim)' : 'dinonaktifkan (disembunyikan dari tim)';
 
         // Catat Audit Log
         ProjectActivityLog::record(
-            $project->id, 
-            'Expense', 
-            'TOGGLE', 
-            "Mengubah transparansi laporan keuangan menjadi " . ($project->is_financial_transparent ? 'Aktif' : 'Nonaktif')
+            $project->id,
+            'Expense',
+            'TOGGLE',
+            'Mengubah transparansi laporan keuangan menjadi '.($project->is_financial_transparent ? 'Aktif' : 'Nonaktif')
         );
 
         return back()->with('success', "Transparansi laporan belanja proyek berhasil {$statusText}.");
@@ -72,12 +72,12 @@ class ExpenseController extends Controller
     public function store(Request $request, Project $project): RedirectResponse
     {
         $validated = $request->validate([
-            'title'        => ['required', 'string', 'max:255'],
-            'category'     => ['required', 'string'],
-            'amount'       => ['required', 'numeric', 'min:1'],
+            'title' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string'],
+            'amount' => ['required', 'numeric', 'min:1'],
             'expense_date' => ['required', 'date'],
             'receipt_file' => ['nullable', 'file', 'mimes:jpeg,png,jpg,pdf', 'max:10240'],
-            'notes'        => ['nullable', 'string'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $validated['project_id'] = $project->id;
@@ -96,10 +96,10 @@ class ExpenseController extends Controller
 
         // Catat Audit Log
         ProjectActivityLog::record(
-            $project->id, 
-            'Expense', 
-            'CREATE', 
-            "Mencatatkan pengeluaran belanja: '{$validated['title']}' sebesar Rp " . number_format($validated['amount'], 0, ',', '.')
+            $project->id,
+            'Expense',
+            'CREATE',
+            "Mencatatkan pengeluaran belanja: '{$validated['title']}' sebesar Rp ".number_format($validated['amount'], 0, ',', '.')
         );
 
         return redirect()->route('management.projects.expenses.index', $project->id)
@@ -123,10 +123,10 @@ class ExpenseController extends Controller
 
         // Catat Audit Log
         ProjectActivityLog::record(
-            $project->id, 
-            'Expense', 
-            'DELETE', 
-            "Menghapus catatan belanja: '{$expenseTitle}' senilai Rp " . number_format($expenseAmount, 0, ',', '.')
+            $project->id,
+            'Expense',
+            'DELETE',
+            "Menghapus catatan belanja: '{$expenseTitle}' senilai Rp ".number_format($expenseAmount, 0, ',', '.')
         );
 
         return redirect()->route('management.projects.expenses.index', $project->id)

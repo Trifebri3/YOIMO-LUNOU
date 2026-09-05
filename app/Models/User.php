@@ -84,4 +84,43 @@ class User extends Authenticatable
     {
         return $this->belongsTo(CompanyProfile::class, 'company_profile_id');
     }
+
+    public function companies()
+    {
+        return $this->belongsToMany(CompanyProfile::class, 'company_profile_user')->withPivot('role')->withTimestamps();
+    }
+
+    public function allCompanies()
+    {
+        $companies = $this->companies()->get();
+        if ($this->company) {
+            $companies = $companies->push($this->company);
+        }
+        $managed = $this->managedCompanies()->get();
+        if ($managed->isNotEmpty()) {
+            $companies = $companies->concat($managed);
+        }
+
+        return $companies->unique('id')->values();
+    }
+
+    public function userPoint()
+    {
+        return $this->hasOne(UserPoint::class, 'user_id');
+    }
+
+    public function pointLogs()
+    {
+        return $this->hasMany(UserPointLog::class, 'user_id')->latest();
+    }
+
+    public function awards()
+    {
+        return $this->hasMany(UserAward::class, 'user_id')->latest();
+    }
+
+    public function tasks()
+    {
+        return $this->hasMany(ProjectTask::class, 'assigned_to');
+    }
 }

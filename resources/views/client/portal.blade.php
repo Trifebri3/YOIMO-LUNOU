@@ -3,7 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Klien - {{ $project->name }}</title>
+    <title>Portal Klien: {{ $project->name }} | Yoimo Workspace</title>
+    <meta name="description" content="Portal pemantauan progres proyek, linimasa roadmap, dan transparansi kolaborasi resmi untuk {{ $project->client_name ?? 'Klien' }} pada proyek {{ $project->name }}.">
+
+    <!-- Open Graph / LinkedIn -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ route('client.portal.show', $project->share_token) }}">
+    <meta property="og:title" content="Portal Klien: {{ $project->name }} - Yoimo Workspace">
+    <meta property="og:description" content="Pantau progres proyek, linimasa roadmap, dan transparansi kerja secara real-time pada proyek {{ $project->name }}.">
+    <meta property="og:image" content="{{ $project->project_cover ? asset('storage/' . $project->project_cover) : asset('images/yoimo-og-banner.png') }}">
+    <meta property="og:site_name" content="Yoimo Workspace">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="{{ route('client.portal.show', $project->share_token) }}">
+    <meta name="twitter:title" content="Portal Klien: {{ $project->name }} - Yoimo Workspace">
+    <meta name="twitter:description" content="Pantau progres proyek, linimasa roadmap, dan transparansi kerja secara real-time pada proyek {{ $project->name }}.">
+    <meta name="twitter:image" content="{{ $project->project_cover ? asset('storage/' . $project->project_cover) : asset('images/yoimo-og-banner.png') }}">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

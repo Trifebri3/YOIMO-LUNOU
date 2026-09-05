@@ -22,7 +22,7 @@ class ProjectRoadmap extends Model
 
     protected $casts = [
         'start_date' => 'date',
-        'end_date'   => 'date',
+        'end_date' => 'date',
         'objectives' => 'array',
     ];
 
@@ -32,10 +32,8 @@ class ProjectRoadmap extends Model
     }
 
     // Di dalam class ProjectRoadmap
-public function tasks()
-{
-    return $this->hasMany(ProjectTask::class, 'project_roadmap_id');
-}
-
-
+    public function tasks()
+    {
+        return $this->hasMany(ProjectTask::class, 'project_roadmap_id');
+    }
 }

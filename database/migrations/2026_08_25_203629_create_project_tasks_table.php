@@ -21,7 +21,7 @@ return new class extends Migration
             $table->enum('priority', ['Low', 'Medium', 'High', 'Urgent'])->default('Medium');
             $table->enum('status', ['Todo', 'In Progress', 'Review', 'Completed'])->default('Todo');
             $table->date('due_date')->nullable();
-            
+
             // Keterikatan Target Output Linimasa (Opsional)
             $table->integer('linked_objective_index')->nullable(); // Index target di JSON objectives roadmap
 

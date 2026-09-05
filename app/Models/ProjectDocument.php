@@ -26,7 +26,7 @@ class ProjectDocument extends Model
 
     protected $casts = [
         'is_mandatory' => 'boolean',
-        'readers_log'  => 'array',
+        'readers_log' => 'array',
     ];
 
     public function project()

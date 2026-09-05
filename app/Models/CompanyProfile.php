@@ -66,4 +66,23 @@ class CompanyProfile extends Model
     {
         return $this->hasMany(User::class, 'company_profile_id');
     }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'company_profile_user')->withPivot('role')->withTimestamps();
+    }
+
+    public function allMembers()
+    {
+        $members = $this->users()->get();
+        $legacy = $this->employees()->get();
+        if ($legacy->isNotEmpty()) {
+            $members = $members->concat($legacy);
+        }
+        if ($this->manager) {
+            $members = $members->push($this->manager);
+        }
+
+        return $members->unique('id')->values();
+    }
 }

@@ -28,6 +28,31 @@
         </div>
     @endif
 
+    <!-- KARTU PORTOFOLIO PUBLIK SHAREABLE -->
+    <div class="bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 border border-indigo-700/50 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div class="space-y-2 max-w-xl z-10">
+            <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider rounded-full">Baru</span>
+                <span class="text-indigo-200 text-xs font-semibold">Portofolio Profesional & Rekam Jejak</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black tracking-tight">Portofolio Publik Anda Sudah Siap!</h2>
+            <p class="text-xs text-indigo-200/90 leading-relaxed">
+                Tampilkan rekam jejak kerja, proyek yang diikuti, dan lencana terverifikasi Anda ke publik, klien, atau jejaring profesional di LinkedIn.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 z-10 shrink-0 w-full sm:w-auto">
+            <a href="{{ route('public.portfolio.show', Auth::id()) }}" target="_blank" class="px-5 py-3 bg-white hover:bg-slate-100 text-indigo-900 text-xs font-black rounded-xl transition shadow-lg flex items-center justify-center gap-2 w-full sm:w-auto">
+                <span>Lihat Portofolio</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+            <button type="button" onclick="navigator.clipboard.writeText('{{ route('public.portfolio.show', Auth::id()) }}'); alert('Tautan portofolio publik Anda berhasil disalin!');" class="px-4 py-3 bg-indigo-950/60 hover:bg-indigo-950 text-indigo-200 text-xs font-bold rounded-xl transition border border-indigo-400/30 flex items-center justify-center gap-2 w-full sm:w-auto">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span>Salin Link</span>
+            </button>
+        </div>
+    </div>
+
     <!-- 1. KARTU INFORMASI PROFIL LENGKAP -->
     <div class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
         <div>
@@ -208,7 +233,26 @@
         </form>
     </div>
 
-    <!-- 3. KARTU PENGHAPUSAN AKUN (PILIHAN) -->
+    <!-- 3. KARTU SESI & KELUAR AKUN -->
+    <div class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-base font-black text-slate-900 tracking-tight">Sesi Login & Keluar</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Keluar dari akun Yoimo Workspace pada perangkat ini.</p>
+            </div>
+
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" 
+                        class="px-5 py-2.5 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 border border-rose-200 text-xs font-black rounded-xl transition-all shadow-2xs flex items-center gap-2 group cursor-pointer">
+                    <svg class="w-4 h-4 text-rose-600 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    <span>Keluar dari Akun (Log Out)</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. KARTU PENGHAPUSAN AKUN (PILIHAN) -->
     <div class="bg-rose-50/40 border border-rose-100 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
         <div>
             <h2 class="text-base font-black text-rose-800 tracking-tight">Hapus Akun Permanen</h2>

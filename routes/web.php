@@ -18,6 +18,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicAwardController;
 use App\Http\Controllers\PublicCompanyController;
+use App\Http\Controllers\PublicPortfolioController;
+use App\Http\Controllers\PublicTaskController;
 use App\Http\Controllers\Superadmin\AISettingsController;
 use App\Http\Controllers\Superadmin\CompanyProfileController as SuperadminCompanyController;
 use App\Http\Controllers\Superadmin\DashboardController as SuperadminDashboard;
@@ -152,8 +154,14 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
 // Portofolio Publik Perusahaan
 Route::get('/company/{slug}', [PublicCompanyController::class, 'show'])->name('public.company.show');
 
+// Public User Profile & Personal Portfolio Share Link
+Route::get('/u/{user}', [PublicPortfolioController::class, 'show'])->name('public.portfolio.show');
+
 // Public Award Certificate Share Link
 Route::get('/award/share/{token}', [PublicAwardController::class, 'show'])->name('public.award.show');
+
+// Public Task Completion Share Link
+Route::get('/task/share/{id}', [PublicTaskController::class, 'show'])->name('public.task.show');
 
 // Client Shared Portal Links
 Route::get('/shared/project/{token}', [ClientPortalController::class, 'show'])->name('client.portal.show');
@@ -191,6 +199,7 @@ Route::middleware(['auth', 'verified', 'role:management,superadmin'])
         Route::get('/dashboard', [ManagementDashboard::class, 'index'])->name('dashboard');
         Route::get('/company/{company}/workspace', [ManagementCompanyController::class, 'workspace'])->name('company.workspace');
         Route::post('/company/{company}/add-user', [ManagementCompanyController::class, 'addUser'])->name('company.add-user');
+        Route::delete('/company/{company}/users/{user}', [ManagementCompanyController::class, 'removeUser'])->name('company.remove-user');
         Route::get('/company/{company}/wellbeing', [ManagementCompanyController::class, 'wellbeingReport'])->name('company.wellbeing');
         Route::resource('company', ManagementCompanyController::class)->except(['create', 'store', 'destroy']);
         Route::post('/company/{company}/generate-ai', [ManagementCompanyController::class, 'generateCompanyAi'])->name('company.generate-ai');

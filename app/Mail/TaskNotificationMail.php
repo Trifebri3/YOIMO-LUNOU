@@ -12,6 +12,7 @@ class TaskNotificationMail extends Mailable
     use Queueable, SerializesModels;
 
     public $task;
+
     public $type; // 'created', 'updated', or 'reminder'
 
     public function __construct(ProjectTask $task, string $type)
@@ -23,13 +24,13 @@ class TaskNotificationMail extends Mailable
     public function build()
     {
         $subjectMap = [
-            'created' => 'Tugas Baru Ditugaskan: ' . $this->task->title,
-            'updated' => 'Pembaruan Tugas: ' . $this->task->title,
-            'reminder' => 'PENGINGAT DEADLINE: Tugas "' . $this->task->title . '" mendekati tenggat waktu!'
+            'created' => 'Tugas Baru Ditugaskan: '.$this->task->title,
+            'updated' => 'Pembaruan Tugas: '.$this->task->title,
+            'reminder' => 'PENGINGAT DEADLINE: Tugas "'.$this->task->title.'" mendekati tenggat waktu!',
         ];
 
         return $this->subject($subjectMap[$this->type] ?? 'Notifikasi Tugas Yoimo')
-                    ->html($this->renderHtmlContent());
+            ->html($this->renderHtmlContent());
     }
 
     private function renderHtmlContent(): string
@@ -40,7 +41,7 @@ class TaskNotificationMail extends Mailable
             'Low' => '#3b82f6',
             'Medium' => '#f59e0b',
             'High' => '#ef4444',
-            'Urgent' => '#7c3aed'
+            'Urgent' => '#7c3aed',
         ][$this->task->priority] ?? '#64748b';
 
         return "
@@ -51,7 +52,7 @@ class TaskNotificationMail extends Mailable
             </div>
             <div style='background-color: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 20px;'>
                 <p style='font-size: 14px; color: #334155; line-height: 1.6;'>
-                    Halo, <strong>Tugas Anda {$actionText}</strong> pada proyek <strong>" . ($this->task->project->name ?? 'Project') . "</strong>.
+                    Halo, <strong>Tugas Anda {$actionText}</strong> pada proyek <strong>".($this->task->project->name ?? 'Project')."</strong>.
                 </p>
                 <table style='width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 15px;'>
                     <tr>
@@ -73,7 +74,7 @@ class TaskNotificationMail extends Mailable
                 </table>
             </div>
             <div style='text-align: center;'>
-                <a href='" . url('/user/projects/' . $this->task->project_id . '?tab=tasks') . "' style='display: inline-block; background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 13px;'>Buka Halaman Tugas</a>
+                <a href='".url('/user/projects/'.$this->task->project_id.'?tab=tasks')."' style='display: inline-block; background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 13px;'>Buka Halaman Tugas</a>
             </div>
             <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;'>
             <p style='font-size: 11px; color: #94a3b8; text-align: center; margin: 0;'>

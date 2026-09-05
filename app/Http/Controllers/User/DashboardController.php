@@ -61,7 +61,12 @@ class DashboardController extends Controller
             $tasksQuery->where('priority', $request->priority);
         }
 
-        $myTasks = $tasksQuery->orderByRaw("FIELD(status, 'In Progress', 'Todo', 'Review', 'Completed')")
+        $myTasks = $tasksQuery->orderByRaw("CASE 
+                WHEN status = 'In Progress' THEN 1 
+                WHEN status = 'Todo' THEN 2 
+                WHEN status = 'Review' THEN 3 
+                WHEN status = 'Completed' THEN 4 
+                ELSE 5 END")
             ->orderBy('due_date', 'asc')
             ->get();
 

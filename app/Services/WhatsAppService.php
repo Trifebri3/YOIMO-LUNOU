@@ -23,7 +23,7 @@ class WhatsAppService
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => $token
+                'Authorization' => $token,
             ])->withoutVerifying()->asForm()->post('https://api.fonnte.com/send', [
                 'target' => $target,
                 'message' => $message,
@@ -31,14 +31,17 @@ class WhatsAppService
 
             $json = $response->json();
             if ($response->successful() && ($json['status'] ?? false) == true) {
-                Log::info("WhatsApp successfully sent to {$target}: " . substr($message, 0, 50));
+                Log::info("WhatsApp successfully sent to {$target}: ".substr($message, 0, 50));
+
                 return true;
             }
 
-            Log::error("Fonnte API error response for {$target}: " . json_encode($json));
+            Log::error("Fonnte API error response for {$target}: ".json_encode($json));
+
             return false;
         } catch (\Exception $e) {
-            Log::error("WhatsApp service exception: " . $e->getMessage());
+            Log::error('WhatsApp service exception: '.$e->getMessage());
+
             return false;
         }
     }

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('rest_condition')->default(3);
             $table->text('thoughts')->nullable();
             $table->timestamps();
-            
+
             // Unique checkin per user per date
             $table->unique(['user_id', 'checkin_date']);
         });

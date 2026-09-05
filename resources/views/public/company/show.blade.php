@@ -3,7 +3,23 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $company->company_name }} - Official Portfolio</title>
+    <title>{{ $company->company_name }} - Portofolio & Profil Resmi | Yoimo Workspace</title>
+    <meta name="description" content="{{ \Illuminate\Support\Str::limit($company->description ?? 'Profil resmi dan portofolio proyek ' . $company->company_name . ' di ekosistem Yoimo Workspace.', 160) }}">
+
+    <!-- Open Graph / LinkedIn -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ route('public.company.show', $company->slug) }}">
+    <meta property="og:title" content="{{ $company->company_name }} - Portofolio & Profil Resmi">
+    <meta property="og:description" content="{{ \Illuminate\Support\Str::limit($company->description ?? 'Profil resmi dan portofolio proyek ' . $company->company_name . ' di ekosistem Yoimo Workspace.', 160) }}">
+    <meta property="og:image" content="{{ $company->logo ? asset('storage/' . $company->logo) : asset('images/yoimo-og-banner.png') }}">
+    <meta property="og:site_name" content="Yoimo Workspace">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="{{ route('public.company.show', $company->slug) }}">
+    <meta name="twitter:title" content="{{ $company->company_name }} - Portofolio & Profil Resmi">
+    <meta name="twitter:description" content="{{ \Illuminate\Support\Str::limit($company->description ?? 'Profil resmi dan portofolio proyek ' . $company->company_name . ' di ekosistem Yoimo Workspace.', 160) }}">
+    <meta name="twitter:image" content="{{ $company->logo ? asset('storage/' . $company->logo) : asset('images/yoimo-og-banner.png') }}">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">

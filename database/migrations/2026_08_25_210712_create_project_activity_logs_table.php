@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-            
+
             // Metadata Aksi
             $table->string('user_name')->nullable();
             $table->string('user_role')->nullable();

@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\User;
 use App\Models\AISetting;
+use App\Models\User;
 use App\Services\AIService;
 use Illuminate\Support\Facades\Http;
 
@@ -19,7 +19,7 @@ test('ai setting encryption works', function () {
     $this->assertDatabaseHas('ai_settings', [
         'id' => $setting->id,
     ]);
-    
+
     // Check decrypted attribute matches original
     $this->assertEquals('super-secret-key-123', $setting->api_key);
 });
@@ -44,15 +44,15 @@ test('ai service chat route works with mock', function () {
                     'message' => [
                         'role' => 'assistant',
                         'content' => 'Hello from mock OpenAI!',
-                    ]
-                ]
+                    ],
+                ],
             ],
             'usage' => [
                 'prompt_tokens' => 10,
                 'completion_tokens' => 15,
                 'total_tokens' => 25,
-            ]
-        ], 200)
+            ],
+        ], 200),
     ]);
 
     $this->actingAs($user);
@@ -70,7 +70,7 @@ test('connection validation testing works', function () {
     $user = User::factory()->create();
 
     Http::fake([
-        'https://openrouter.ai/api/v1/chat/completions' => Http::response([], 200)
+        'https://openrouter.ai/api/v1/chat/completions' => Http::response([], 200),
     ]);
 
     $response = $this->actingAs($user)->post(route('ai-settings.test'), [
@@ -82,6 +82,6 @@ test('connection validation testing works', function () {
     $response->assertOk();
     $response->assertJson([
         'success' => true,
-        'message' => 'Koneksi berhasil terhubung.'
+        'message' => 'Koneksi berhasil terhubung.',
     ]);
 });

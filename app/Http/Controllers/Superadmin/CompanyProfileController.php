@@ -15,6 +15,7 @@ class CompanyProfileController extends Controller
     public function index(): View
     {
         $companies = CompanyProfile::with('manager')->latest()->paginate(10);
+
         return view('superadmin.company.index', compact('companies'));
     }
 
@@ -22,26 +23,27 @@ class CompanyProfileController extends Controller
     {
         // Ambil user dengan role management untuk ditugaskan
         $managers = User::where('role', 'management')->get();
+
         return view('superadmin.company.create', compact('managers'));
     }
 
-public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'manager_id'         => ['nullable'], // Validasi nullable
-            'company_name'       => ['required', 'string', 'max:255'],
-            'tagline'            => ['nullable', 'string', 'max:255'],
-            'email'              => ['nullable', 'email', 'max:255'],
-            'phone'              => ['nullable', 'string', 'max:50'],
-            'address'            => ['nullable', 'string'],
-            'about'              => ['nullable', 'string'],
-            'vision'             => ['nullable', 'string'],
-            'mission'            => ['nullable', 'string'],
-            'logo'               => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:2048'],
-            'banner'             => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
-            'social_media'       => ['nullable', 'array'],
-            'dynamic_sections'   => ['nullable', 'array'],
-            'dynamic_files.*'    => ['nullable', 'file', 'max:10240'],
+            'manager_id' => ['nullable'], // Validasi nullable
+            'company_name' => ['required', 'string', 'max:255'],
+            'tagline' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'address' => ['nullable', 'string'],
+            'about' => ['nullable', 'string'],
+            'vision' => ['nullable', 'string'],
+            'mission' => ['nullable', 'string'],
+            'logo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:2048'],
+            'banner' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
+            'social_media' => ['nullable', 'array'],
+            'dynamic_sections' => ['nullable', 'array'],
+            'dynamic_files.*' => ['nullable', 'file', 'max:10240'],
         ]);
 
         // Pastikan jika string kosong ("") diubah menjadi null
@@ -76,32 +78,34 @@ public function store(Request $request): RedirectResponse
     public function show(CompanyProfile $company): View
     {
         $company->load('manager');
+
         return view('superadmin.company.show', compact('company'));
     }
 
     public function edit(CompanyProfile $company): View
     {
         $managers = User::where('role', 'management')->get();
+
         return view('superadmin.company.edit', compact('company', 'managers'));
     }
 
-public function update(Request $request, CompanyProfile $company): RedirectResponse
+    public function update(Request $request, CompanyProfile $company): RedirectResponse
     {
         $validated = $request->validate([
-            'manager_id'         => ['nullable'],
-            'company_name'       => ['required', 'string', 'max:255'],
-            'tagline'            => ['nullable', 'string', 'max:255'],
-            'email'              => ['nullable', 'email', 'max:255'],
-            'phone'              => ['nullable', 'string', 'max:50'],
-            'address'            => ['nullable', 'string'],
-            'about'              => ['nullable', 'string'],
-            'vision'             => ['nullable', 'string'],
-            'mission'            => ['nullable', 'string'],
-            'logo'               => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:2048'],
-            'banner'             => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
-            'social_media'       => ['nullable', 'array'],
-            'dynamic_sections'   => ['nullable', 'array'],
-            'dynamic_files.*'    => ['nullable', 'file', 'max:10240'],
+            'manager_id' => ['nullable'],
+            'company_name' => ['required', 'string', 'max:255'],
+            'tagline' => ['nullable', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'address' => ['nullable', 'string'],
+            'about' => ['nullable', 'string'],
+            'vision' => ['nullable', 'string'],
+            'mission' => ['nullable', 'string'],
+            'logo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:2048'],
+            'banner' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
+            'social_media' => ['nullable', 'array'],
+            'dynamic_sections' => ['nullable', 'array'],
+            'dynamic_files.*' => ['nullable', 'file', 'max:10240'],
         ]);
 
         // Pastikan jika string kosong ("") diubah menjadi null

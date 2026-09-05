@@ -30,7 +30,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('project_client_questions');
-        
+
         Schema::table('projects', function (Blueprint $table) {
             $table->dropColumn('share_token');
         });

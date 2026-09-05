@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Management;
 
 use App\Http\Controllers\Controller;
 use App\Mail\TaskNotificationMail;
+use App\Models\CompanyProfile;
 use App\Models\Project;
 use App\Models\ProjectActivityLog;
 use App\Models\ProjectRoadmap;
@@ -11,6 +12,7 @@ use App\Models\ProjectTask;
 use App\Models\User;
 use App\Notifications\TaskNotification;
 use App\Services\AIService;
+use App\Services\GamificationService;
 use App\Services\WhatsAppService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,15 +39,12 @@ class TaskController extends Controller
         $assignedUserIds = collect($project->team_matrix ?? [])->pluck('user_id')->unique();
         $teamMembers = User::whereIn('id', $assignedUserIds)->get();
         if ($teamMembers->isEmpty()) {
-            $managerId = CompanyProfile::where('id', $project->company_profile_id)->value('manager_id');
-            $teamMembers = User::where(function ($query) use ($project, $managerId) {
-                $query->where('company_profile_id', $project->company_profile_id);
-                if ($managerId) {
-                    $query->orWhere('id', $managerId);
-                }
-            })
-                ->whereIn('role', ['user', 'finance', 'management'])
-                ->get();
+            $company = $project->company ?? CompanyProfile::find($project->company_profile_id);
+            $teamMembers = $company
+                ? $company->allMembers()
+                    ->filter(fn ($u) => in_array($u->role, ['user', 'finance', 'management']))
+                    ->values()
+                : collect();
         }
 
         return view('management.projects.tasks.index', compact('project', 'teamMembers'));
@@ -203,6 +202,10 @@ class TaskController extends Controller
 
         $task->save();
 
+        if ($task->status === 'Completed' && $task->assigned_to) {
+            GamificationService::awardTaskCompletion($task);
+        }
+
         if ($task->assigned_to) {
             $task->load('assignee', 'project');
             if ($task->assignee) {
@@ -327,6 +330,8 @@ class TaskController extends Controller
                 'status' => 'Completed',
                 'revision_notes' => null,
             ]);
+
+            GamificationService::awardTaskCompletion($task);
 
             // Otomatis centang indikator target roadmap jika terikat
             if ($task->project_roadmap_id && $task->linked_objective_index !== null) {

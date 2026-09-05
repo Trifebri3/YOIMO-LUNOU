@@ -22,16 +22,15 @@ class CompanyController extends Controller
     {
         $userId = Auth::id();
 
-        // 1. Ambil proyek-proyek di company ini yang melibatkan user (atau semua proyek di company ini)
+        // Pastikan user terafiliasi dengan company ini via pivot atau legacy
+        $isMember = $company->allMembers()->contains('id', $userId) || Auth::user()->isSuperAdmin();
+        if (! $isMember) {
+            $company->users()->syncWithoutDetaching([$userId => ['role' => Auth::user()->role ?? 'user']]);
+        }
+
+        // 1. Ambil semua proyek aktif di company ini
         $companyProjects = Project::where('company_profile_id', $company->id)
-            ->where(function ($q) use ($userId) {
-                $q->whereJsonContains('team_matrix', ['user_id' => (string) $userId])
-                    ->orWhereJsonContains('team_matrix', ['user_id' => (int) $userId])
-                    ->orWhere('team_matrix', 'like', '%"user_id":'.$userId.'%')
-                    ->orWhere('team_matrix', 'like', '%"user_id":"'.$userId.'"%')
-                    ->orWhere('created_by', $userId)
-                    ->orWhere('is_showcased', true);
-            })
+            ->where('is_archived', false)
             ->with(['roadmaps', 'tasks'])
             ->latest()
             ->get();

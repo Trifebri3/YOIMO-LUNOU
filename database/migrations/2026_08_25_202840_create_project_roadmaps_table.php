@@ -17,10 +17,10 @@ return new class extends Migration
             $table->date('end_date');
             $table->enum('status', ['Pending', 'In Progress', 'Completed'])->default('Pending');
             $table->unsignedTinyInteger('progress_percentage')->default(0);
-            
+
             // Target Ketercapaian / Deliverable Milestones dalam Fase Ini
             $table->json('objectives')->nullable(); // Array: [{"target": "Design System Figma Selesai", "is_achieved": false}]
-            
+
             $table->timestamps();
         });
     }

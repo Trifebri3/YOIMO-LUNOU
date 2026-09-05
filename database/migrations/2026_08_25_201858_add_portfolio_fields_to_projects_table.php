@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('project_cover')->nullable()->after('is_showcased');
             $table->string('client_logo')->nullable()->after('project_cover');
             $table->string('demo_url')->nullable()->after('client_logo');
-            
+
             // Detail Profil Showcase Publik
             $table->text('short_description')->nullable()->after('expected_outputs');
             $table->text('solution_statement')->nullable()->after('short_description');
@@ -32,7 +32,7 @@ return new class extends Migration
             $table->dropColumn([
                 'is_showcased', 'project_cover', 'client_logo', 'demo_url',
                 'short_description', 'solution_statement', 'result_statement',
-                'services_rendered', 'tech_stacks', 'gallery_images', 'client_testimonial'
+                'services_rendered', 'tech_stacks', 'gallery_images', 'client_testimonial',
             ]);
         });
     }

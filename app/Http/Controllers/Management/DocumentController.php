@@ -42,11 +42,11 @@ class DocumentController extends Controller
         $userId = Auth::id();
         $hasRead = collect($readers)->contains('user_id', $userId);
 
-        if (!$hasRead) {
+        if (! $hasRead) {
             $readers[] = [
                 'user_id' => $userId,
-                'name'    => Auth::user()->name,
-                'read_at' => now()->format('Y-m-d H:i:s')
+                'name' => Auth::user()->name,
+                'read_at' => now()->format('Y-m-d H:i:s'),
             ];
             $document->update(['readers_log' => $readers]);
 
@@ -60,13 +60,13 @@ class DocumentController extends Controller
     public function store(Request $request, Project $project): RedirectResponse
     {
         $validated = $request->validate([
-            'title'        => ['required', 'string', 'max:255'],
-            'category'     => ['required', 'string'],
-            'doc_type'     => ['required', 'in:file,link,article'],
+            'title' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string'],
+            'doc_type' => ['required', 'in:file,link,article'],
             'is_mandatory' => ['nullable', 'boolean'],
             'external_url' => ['nullable', 'url', 'max:255'],
-            'content'      => ['nullable', 'string'],
-            'doc_file'     => ['nullable', 'file', 'max:25600'],
+            'content' => ['nullable', 'string'],
+            'doc_file' => ['nullable', 'file', 'max:25600'],
         ]);
 
         $validated['project_id'] = $project->id;
@@ -77,7 +77,7 @@ class DocumentController extends Controller
             $file = $request->file('doc_file');
             $validated['file_path'] = $file->store('project_repository', 'public');
             $validated['file_name_original'] = $file->getClientOriginalName();
-            $validated['file_size'] = round($file->getSize() / 1024, 1) . ' KB';
+            $validated['file_size'] = round($file->getSize() / 1024, 1).' KB';
         }
 
         ProjectDocument::create($validated);

@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\ProjectTask;
+use App\Models\UserAward;
 use App\Models\UserPoint;
 use App\Models\UserPointLog;
-use App\Models\UserAward;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class GamificationService
 {
@@ -30,7 +31,7 @@ class GamificationService
         $up->level = max(1, floor($up->total_points / 200) + 1);
         $up->save();
 
-        // 2. Catat Log Transaksi
+        // 2. Catat Log Transaksi Tracing
         UserPointLog::create([
             'user_id' => $userId,
             'points' => $points,
@@ -45,6 +46,112 @@ class GamificationService
     }
 
     /**
+     * Berikan poin reward dan tracing saat tugas diselesaikan (Completed / Approved)
+     */
+    public static function awardTaskCompletion(ProjectTask $task, ?int $userId = null)
+    {
+        $targetUserId = $userId ?? $task->assigned_to;
+        if (! $targetUserId) {
+            return null;
+        }
+
+        // Cek deduplikasi: jangan beri poin tugas selesai berulang kali untuk tugas yang sama
+        $alreadyCompleted = UserPointLog::where('user_id', $targetUserId)
+            ->where('source_type', 'task_completed')
+            ->where('source_id', $task->id)
+            ->exists();
+
+        if ($alreadyCompleted) {
+            return null;
+        }
+
+        $companyId = $task->project ? $task->project->company_profile_id : null;
+        $projectId = $task->project_id;
+
+        // Base XP penyelesaian tugas: +50 XP
+        $basePoints = 50;
+
+        // Bonus prioritas
+        $priorityBonus = match ($task->priority) {
+            'Urgent' => 30,
+            'High' => 20,
+            'Medium' => 10,
+            default => 0,
+        };
+
+        $totalCompletionPoints = $basePoints + $priorityBonus;
+
+        $desc = "Menyelesaikan tugas: {$task->title}";
+        if ($priorityBonus > 0) {
+            $desc .= " (+Bonus Prioritas {$task->priority})";
+        }
+
+        // Catat poin dan log tracing penyelesaian tugas
+        $userPoint = self::addPoints(
+            $targetUserId,
+            $totalCompletionPoints,
+            'task_completed',
+            $task->id,
+            $companyId,
+            $projectId,
+            $desc
+        );
+
+        // Cek Ketepatan Waktu: jika diselesaikan pada atau sebelum due_date
+        $isOnTime = true;
+        if ($task->due_date) {
+            $dueDateEnd = Carbon::parse($task->due_date)->endOfDay();
+            $isOnTime = now()->lte($dueDateEnd);
+        }
+
+        if ($isOnTime) {
+            self::addPoints(
+                $targetUserId,
+                30,
+                'task_ontime',
+                $task->id,
+                $companyId,
+                $projectId,
+                "Bonus tepat waktu: {$task->title}"
+            );
+        }
+
+        // Evaluasi Milestone Badge
+        self::checkTaskMilestones($targetUserId);
+
+        return $userPoint;
+    }
+
+    /**
+     * Berikan poin saat pegawai mengirimkan laporan akhir (100% submitFinal)
+     */
+    public static function awardTaskSubmission(ProjectTask $task, int $userId)
+    {
+        // Cek deduplikasi
+        $alreadySubmitted = UserPointLog::where('user_id', $userId)
+            ->where('source_type', 'task_submitted')
+            ->where('source_id', $task->id)
+            ->exists();
+
+        if ($alreadySubmitted) {
+            return null;
+        }
+
+        $companyId = $task->project ? $task->project->company_profile_id : null;
+        $projectId = $task->project_id;
+
+        return self::addPoints(
+            $userId,
+            25,
+            'task_submitted',
+            $task->id,
+            $companyId,
+            $projectId,
+            "Mengirimkan hasil kerja tugas: {$task->title}"
+        );
+    }
+
+    /**
      * Cek dan berikan poin login harian
      */
     public static function checkDailyLogin($userId)
@@ -55,7 +162,7 @@ class GamificationService
         );
 
         $today = Carbon::today();
-        
+
         if (empty($up->last_login_at)) {
             // Pertama kali login
             $up->login_streak = 1;
@@ -74,12 +181,12 @@ class GamificationService
                 $up->save();
 
                 $points = 10;
-                $desc = "Login harian (Streak hari ke-" . $up->login_streak . ")";
-                
+                $desc = 'Login harian (Streak hari ke-'.$up->login_streak.')';
+
                 // Bonus kelipatan 5 hari streak
                 if ($up->login_streak % 5 === 0) {
                     $points += 50;
-                    $desc .= " + Bonus Streak 5 Hari!";
+                    $desc .= ' + Bonus Streak 5 Hari!';
                 }
 
                 self::addPoints($userId, $points, 'daily_login', null, null, null, $desc);
@@ -96,7 +203,6 @@ class GamificationService
 
                 self::addPoints($userId, 10, 'daily_login', null, null, null, 'Login harian (Streak direset)');
             }
-            // diffInDays === 0 artinya hari yang sama, skip biar ga double claim points
         }
     }
 
@@ -109,7 +215,7 @@ class GamificationService
             ->where('award_type', $awardType)
             ->exists();
 
-        if (!$exists) {
+        if (! $exists) {
             return UserAward::create([
                 'user_id' => $userId,
                 'award_type' => $awardType,
@@ -118,11 +224,12 @@ class GamificationService
                 'share_token' => Str::random(12),
             ]);
         }
+
         return null;
     }
 
     /**
-     * Evaluasi tugas untuk award "Si Paling Tepat Waktu"
+     * Evaluasi tugas untuk award dan milestone badges
      */
     public static function checkTaskMilestones($userId)
     {
@@ -139,6 +246,25 @@ class GamificationService
         $up = UserPoint::where('user_id', $userId)->first();
         if ($up && $up->total_points >= 500) {
             self::awardBadge($userId, 'si_paling_produktif', 'Si Paling Produktif');
+        }
+
+        // 3. Cek Master Penuntasan Tugas: menyelesaikan minimal 5 tugas
+        $completedTaskCount = UserPointLog::where('user_id', $userId)
+            ->where('source_type', 'task_completed')
+            ->count();
+
+        if ($completedTaskCount >= 5) {
+            self::awardBadge($userId, 'master_tugas', 'Master Penuntasan Tugas');
+        }
+
+        // 4. Cek Kolaborator Handal: menyelesaikan tugas di lebih dari 1 project
+        $distinctProjects = UserPointLog::where('user_id', $userId)
+            ->whereNotNull('project_id')
+            ->distinct('project_id')
+            ->count('project_id');
+
+        if ($distinctProjects >= 2) {
+            self::awardBadge($userId, 'kolaborator_handal', 'Kolaborator Handal');
         }
     }
 }

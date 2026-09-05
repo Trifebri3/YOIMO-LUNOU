@@ -22,7 +22,7 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
 
@@ -33,8 +33,8 @@ public function store(LoginRequest $request): RedirectResponse
         $targetRoute = match ($role) {
             'superadmin' => 'superadmin.dashboard',
             'management' => 'management.dashboard',
-            'finance'    => 'user.dashboard',
-            default      => 'user.dashboard',
+            'finance' => 'user.dashboard',
+            default => 'user.dashboard',
         };
 
         $intended = session()->get('url.intended');
@@ -56,6 +56,6 @@ public function store(LoginRequest $request): RedirectResponse
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect()->route('login');
     }
 }

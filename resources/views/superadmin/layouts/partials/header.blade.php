@@ -16,9 +16,30 @@
             </div>
         </div>
 
+        <!-- Kolom Tengah: Quick Search -->
+        <div class="hidden md:flex items-center flex-1 max-w-sm mx-4">
+            <button type="button" onclick="openQuickNavModal()" 
+                    class="w-full flex items-center justify-between px-3.5 py-1.5 bg-slate-100 hover:bg-slate-150 border border-slate-200/80 rounded-2xl text-xs text-slate-500 font-medium transition-all group">
+                <div class="flex items-center gap-2 truncate">
+                    <svg class="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <span class="truncate">Cari cepat...</span>
+                </div>
+                <kbd class="px-1.5 py-0.2 bg-white border border-slate-200 rounded font-mono text-[9px]">Ctrl K</kbd>
+            </button>
+        </div>
+
         <!-- User Profile Dropdown -->
-        <div class="flex items-center gap-4">
-            <div class="text-right">
+        <div class="flex items-center gap-3 sm:gap-4">
+            <button type="button" onclick="openQuickNavModal()" class="p-2 text-slate-500 hover:text-emerald-600 md:hidden">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </button>
+
+            <!-- Mode Switcher to Management Hub -->
+            <a href="{{ route('management.dashboard') }}" class="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold transition-all">
+                <span>Management Hub</span>
+            </a>
+
+            <div class="text-right hidden sm:block">
                 <div class="text-sm font-bold text-slate-800">{{ Auth::user()->name }}</div>
                 <div class="text-[11px] font-medium text-emerald-600">{{ Auth::user()->email }}</div>
             </div>

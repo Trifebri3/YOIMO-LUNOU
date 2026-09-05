@@ -3,15 +3,17 @@
 namespace App\Services\AI;
 
 use App\Contracts\AIProviderInterface;
-use App\Support\AI\AIResponse;
 use App\Exceptions\AIProviderException;
+use App\Support\AI\AIResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class GeminiProvider implements AIProviderInterface
 {
     protected string $apiKey;
+
     protected string $model;
+
     protected string $baseUrl;
 
     public function __construct(string $apiKey, string $model, ?string $baseUrl = null)
@@ -31,16 +33,16 @@ class GeminiProvider implements AIProviderInterface
                 if ($msg['role'] === 'system') {
                     $systemInstruction = [
                         'parts' => [
-                            ['text' => $msg['content']]
-                        ]
+                            ['text' => $msg['content']],
+                        ],
                     ];
                 } else {
                     $role = $msg['role'] === 'assistant' ? 'model' : 'user';
                     $contents[] = [
                         'role' => $role,
                         'parts' => [
-                            ['text' => $msg['content']]
-                        ]
+                            ['text' => $msg['content']],
+                        ],
                     ];
                 }
             }
@@ -48,15 +50,15 @@ class GeminiProvider implements AIProviderInterface
             if (isset($payload['system'])) {
                 $systemInstruction = [
                     'parts' => [
-                        ['text' => $payload['system']]
-                    ]
+                        ['text' => $payload['system']],
+                    ],
                 ];
             }
             $contents[] = [
                 'role' => 'user',
                 'parts' => [
-                    ['text' => $payload['message']]
-                ]
+                    ['text' => $payload['message']],
+                ],
             ];
         }
 
@@ -76,19 +78,19 @@ class GeminiProvider implements AIProviderInterface
         if (isset($payload['max_tokens'])) {
             $generationConfig['maxOutputTokens'] = $payload['max_tokens'];
         }
-        if (!empty($generationConfig)) {
+        if (! empty($generationConfig)) {
             $body['generationConfig'] = $generationConfig;
         }
 
         try {
             // Target v1beta API endpoint for Gemini
-            $url = rtrim($this->baseUrl, '/') . '/v1beta/models/' . $this->model . ':generateContent?key=' . $this->apiKey;
+            $url = rtrim($this->baseUrl, '/').'/v1beta/models/'.$this->model.':generateContent?key='.$this->apiKey;
 
             $response = Http::withoutVerifying()->withHeaders([
                 'Content-Type' => 'application/json',
             ])
-            ->timeout(30)
-            ->post($url, $body);
+                ->timeout(30)
+                ->post($url, $body);
 
             if ($response->failed()) {
                 $status = $response->status();
@@ -117,8 +119,8 @@ class GeminiProvider implements AIProviderInterface
             if ($e instanceof AIProviderException) {
                 throw $e;
             }
-            Log::error('Gemini unexpected exception: ' . $e->getMessage());
-            throw new AIProviderException('Connection failure or timeout to Gemini: ' . $e->getMessage(), 500, $e);
+            Log::error('Gemini unexpected exception: '.$e->getMessage());
+            throw new AIProviderException('Connection failure or timeout to Gemini: '.$e->getMessage(), 500, $e);
         }
     }
 
@@ -130,28 +132,28 @@ class GeminiProvider implements AIProviderInterface
     public function validateConnection(): bool
     {
         try {
-            $url = rtrim($this->baseUrl, '/') . '/v1beta/models/' . $this->model . ':generateContent?key=' . $this->apiKey;
+            $url = rtrim($this->baseUrl, '/').'/v1beta/models/'.$this->model.':generateContent?key='.$this->apiKey;
             $response = Http::withoutVerifying()->withHeaders([
                 'Content-Type' => 'application/json',
             ])
-            ->timeout(10)
-            ->post($url, [
-                'contents' => [
-                    [
-                        'role' => 'user',
-                        'parts' => [
-                            ['text' => 'ping']
-                        ]
-                    ]
-                ],
-                'generationConfig' => [
-                    'maxOutputTokens' => 5
-                ]
-            ]);
+                ->timeout(10)
+                ->post($url, [
+                    'contents' => [
+                        [
+                            'role' => 'user',
+                            'parts' => [
+                                ['text' => 'ping'],
+                            ],
+                        ],
+                    ],
+                    'generationConfig' => [
+                        'maxOutputTokens' => 5,
+                    ],
+                ]);
 
             if ($response->failed()) {
                 $err = $response->json();
-                $msg = $err['error']['message'] ?? 'HTTP ' . $response->status() . ': ' . $response->body();
+                $msg = $err['error']['message'] ?? 'HTTP '.$response->status().': '.$response->body();
                 throw new AIProviderException($msg, $response->status());
             }
 
@@ -160,7 +162,7 @@ class GeminiProvider implements AIProviderInterface
             if ($e instanceof AIProviderException) {
                 throw $e;
             }
-            throw new AIProviderException('Connection error: ' . $e->getMessage(), 500, $e);
+            throw new AIProviderException('Connection error: '.$e->getMessage(), 500, $e);
         }
     }
 }

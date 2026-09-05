@@ -226,7 +226,13 @@
             
             <!-- Roster Anggota Card -->
             <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
-                <h3 class="text-sm font-black text-slate-900">Roster Anggota ({{ $teamMembers->count() + ($company->manager && !$teamMembers->contains('id', $company->manager_id) ? 1 : 0) }})</h3>
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-black text-slate-900">Roster Anggota ({{ $teamMembers->count() }})</h3>
+                    <button type="button" onclick="openAddUserModal()" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-xl transition flex items-center gap-1.5 border border-emerald-200 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span>Tambah Anggota</span>
+                    </button>
+                </div>
                 
                 <div class="space-y-3">
                     <!-- PIC / Manager Perusahaan (Selalu Ditampilkan Pertama) -->
@@ -245,7 +251,11 @@
                                     <span class="text-[10px] text-indigo-600 font-bold uppercase">owner / manager</span>
                                 </div>
                             </div>
-                            <span class="text-[10px] text-slate-400 truncate max-w-[120px]">{{ $company->manager->email }}</span>
+                            <div class="flex items-center gap-2">
+                                <a href="{{ route('public.portfolio.show', $company->manager->id) }}" target="_blank" title="Lihat Portofolio Publik" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-100 transition">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                </a>
+                            </div>
                         </div>
                     @endif
 
@@ -266,7 +276,18 @@
                                         <span class="text-[10px] text-slate-400 uppercase font-bold">{{ $member->position ?? $member->role }}</span>
                                     </div>
                                 </div>
-                                <span class="text-[10px] text-slate-400 truncate max-w-[120px]">{{ $member->email }}</span>
+                                <div class="flex items-center gap-1.5">
+                                    <a href="{{ route('public.portfolio.show', $member->id) }}" target="_blank" title="Lihat Portofolio Publik" class="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-100 transition">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    </a>
+                                    <form action="{{ route('management.company.remove-user', [$company->id, $member->id]) }}" method="POST" onsubmit="return confirm('Keluarkan anggota ini dari workspace?');" class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" title="Keluarkan dari workspace" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         @endif
                     @endforeach

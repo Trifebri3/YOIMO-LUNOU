@@ -5,7 +5,35 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ config('app.name', 'Yoimo Workspace') }} - Platform Kolaborasi & Produktivitas Cerdas</title>
+        <meta name="description" content="Yoimo Workspace adalah platform modern untuk kolaborasi tim, manajemen proyek, pelacakan linimasa, evaluasi pencapaian kerja, dan pemeliharaan ritme produktivitas kerja yang seimbang.">
+        
+        <!-- Open Graph / LinkedIn -->
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta property="og:title" content="Yoimo Workspace - Platform Kolaborasi & Produktivitas Cerdas">
+        <meta property="og:description" content="Kelola proyek, pantau tugas, dan capai target tim dengan mudah dan transparan bersama ekosistem cerdas Yoimo Workspace.">
+        <meta property="og:image" content="{{ asset('images/yoimo-og-banner.png') }}">
+        <meta property="og:image:secure_url" content="{{ asset('images/yoimo-og-banner.png') }}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta property="og:site_name" content="Yoimo Workspace">
+
+        <!-- Twitter Card -->
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="Yoimo Workspace - Platform Kolaborasi & Produktivitas Cerdas">
+        <meta name="twitter:description" content="Kelola proyek, pantau tugas, dan capai target tim dengan mudah dan transparan bersama ekosistem cerdas Yoimo Workspace.">
+        <meta name="twitter:image" content="{{ asset('images/yoimo-og-banner.png') }}">
+
+        <!-- PWA Manifest & Meta -->
+        <link rel="manifest" href="/manifest.json">
+        <meta name="theme-color" content="#4f46e5">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="Yoimo">
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -26,5 +54,16 @@
                 {{ $slot }}
             </div>
         </div>
+
+        <!-- PWA Service Worker Registration -->
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then((reg) => console.log('Yoimo PWA Service Worker registered:', reg.scope))
+                        .catch((err) => console.log('Yoimo PWA Service Worker registration error:', err));
+                });
+            }
+        </script>
     </body>
 </html>

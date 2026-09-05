@@ -123,14 +123,13 @@ class CompanyProfileController extends Controller
         // Ambil semua proyek yang terkait dengan company ini
         $projects = Project::where('company_profile_id', $company->id)->latest()->get();
 
-        // Ambil list semua member tim internal yang ter-embed di company ini (termasuk manager)
-        $teamMembers = User::where('company_profile_id', $company->id)
-            ->orWhere('id', $company->manager_id)
-            ->get();
+        // Ambil list semua member tim internal yang ter-embed di company ini (pivot, legacy, manager)
+        $teamMembers = $company->allMembers();
+        $memberIds = $teamMembers->pluck('id')->toArray();
 
-        // Ambil list semua user yang belum ter-embed di company manapun (unassigned)
-        $availableUsers = User::whereNotIn('role', ['superadmin', 'management'])
-            ->whereNull('company_profile_id')
+        // Ambil list semua user yang belum bergabung di company ini (dapat berasal dari company lain)
+        $availableUsers = User::whereNotIn('role', ['superadmin'])
+            ->whereNotIn('id', $memberIds)
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'role']);
 
@@ -423,10 +422,39 @@ class CompanyProfileController extends Controller
         ]);
 
         $user = User::findOrFail($validated['user_id']);
-        $user->update([
-            'company_profile_id' => $company->id,
+
+        // Hubungkan user ke company via pivot table (many-to-many)
+        $company->users()->syncWithoutDetaching([
+            $user->id => ['role' => $user->role ?? 'user'],
         ]);
 
+        // Jika user belum memiliki primary company, tetapkan ini sebagai primary
+        if (empty($user->company_profile_id)) {
+            $user->update([
+                'company_profile_id' => $company->id,
+            ]);
+        }
+
         return back()->with('success', 'Anggota tim berhasil dimasukkan ke workspace!');
+    }
+
+    public function removeUser(Request $request, CompanyProfile $company, User $user): RedirectResponse
+    {
+        $this->authorizeAccess($company);
+
+        if ($company->manager_id === $user->id) {
+            return back()->with('error', 'Tidak dapat menghapus Manajer utama dari workspace.');
+        }
+
+        $company->users()->detach($user->id);
+
+        if ($user->company_profile_id === $company->id) {
+            $remaining = $user->companies()->first();
+            $user->update([
+                'company_profile_id' => $remaining ? $remaining->id : null,
+            ]);
+        }
+
+        return back()->with('success', 'Anggota tim berhasil dikeluarkan dari workspace company ini.');
     }
 }
