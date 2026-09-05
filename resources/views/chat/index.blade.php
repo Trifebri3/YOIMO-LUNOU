@@ -364,53 +364,29 @@
                         <!-- Custom Attachment Button -->
                         <div class="relative group">
                             <input type="file" name="file" id="chat-file-input" onchange="handleFileSelected(this)" class="hidden">
-                            @if(session()->has('demo_track_id'))
-                                <button type="button" disabled class="p-3 bg-slate-100 border border-slate-200 text-slate-300 rounded-2xl cursor-not-allowed flex items-center justify-center shrink-0" title="Dinonaktifkan di Akun Demo">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                                </button>
-                            @else
-                                <button type="button" onclick="document.getElementById('chat-file-input').click()" 
-                                        class="p-3 bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-2xl transition-all flex items-center justify-center shrink-0"
-                                        title="Lampirkan File / Gambar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                                </button>
-                            @endif
+                            <button type="button" onclick="document.getElementById('chat-file-input').click()" 
+                                    class="p-3 bg-slate-50 border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-2xl transition-all flex items-center justify-center shrink-0"
+                                    title="Lampirkan File / Gambar">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                            </button>
                         </div>
 
                         <!-- Discuss Task Pull Button -->
-                        @if(session()->has('demo_track_id'))
-                            <button type="button" disabled class="p-3 bg-slate-100 border border-slate-200 text-slate-300 rounded-2xl cursor-not-allowed flex items-center justify-center shrink-0" title="Dinonaktifkan di Akun Demo">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-                            </button>
-                        @else
-                            <button type="button" onclick="toggleTaskSelector()" 
-                                    class="p-3 bg-slate-50 border border-slate-200 text-slate-500 hover:text-indigo-650 hover:bg-indigo-50 rounded-2xl transition-all flex items-center justify-center shrink-0"
-                                    title="Kaitkan Tugas / Task">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
-                            </button>
-                        @endif
+                        <button type="button" onclick="toggleTaskSelector()" 
+                                class="p-3 bg-slate-50 border border-slate-200 text-slate-500 hover:text-indigo-650 hover:bg-indigo-50 rounded-2xl transition-all flex items-center justify-center shrink-0"
+                                title="Kaitkan Tugas / Task">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                        </button>
 
                         <!-- Main Message Input Text Field -->
-                        @if(session()->has('demo_track_id'))
-                            <input type="text" name="message" id="chat-message-input" autocomplete="off" disabled
-                                   placeholder="Fitur kirim chat dinonaktifkan di akun demo." 
-                                   class="flex-1 px-4 py-3 bg-slate-100 border border-slate-200 rounded-2xl text-xs font-semibold placeholder-slate-400 cursor-not-allowed shadow-xs">
-                        @else
-                            <input type="text" name="message" id="chat-message-input" autocomplete="off"
-                                   placeholder="Ketik pesan Anda disini..." 
-                                   class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-xs">
-                        @endif
+                        <input type="text" name="message" id="chat-message-input" autocomplete="off"
+                               placeholder="Ketik pesan Anda disini..." 
+                               class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-xs">
 
                         <!-- Submit Button -->
-                        @if(session()->has('demo_track_id'))
-                            <button type="button" disabled class="p-3 bg-slate-200 text-slate-400 rounded-2xl shrink-0 cursor-not-allowed">
-                                <svg class="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                            </button>
-                        @else
-                            <button type="submit" class="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-md transition-all shrink-0">
-                                <svg class="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                            </button>
-                        @endif
+                        <button type="submit" class="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-md transition-all shrink-0">
+                            <svg class="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        </button>
                     </div>
 
                     <!-- Selected Indicators Grid -->

@@ -82,7 +82,7 @@
             </button>
         </div>
         <button type="button" onclick="startGuidedTour()" id="start-tour-btn" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-750 hover:from-indigo-700 hover:to-indigo-850 text-white text-xs font-black rounded-xl shadow transition-all cursor-pointer flex items-center gap-2">
-            Panduan Demo Interaktif
+            Panduan Fitur Interaktif
         </button>
     </div>
 
@@ -1577,7 +1577,7 @@
     <div id="guided-tour-tooltip" class="hidden absolute bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xl w-[290px] transition-all duration-300" style="z-index: 10000;">
         <div class="space-y-3 font-sans">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                <h5 class="text-xs font-black text-indigo-700 uppercase tracking-wider">Panduan Demo LUNOU</h5>
+                <h5 class="text-xs font-black text-indigo-700 uppercase tracking-wider">Panduan Fitur LUNOU</h5>
                 <span id="guided-tour-step-indicator" class="text-[9px] bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md font-bold text-indigo-700">1 / 6</span>
             </div>
             <p id="guided-tour-text" class="text-[11px] text-slate-600 leading-relaxed font-semibold"></p>

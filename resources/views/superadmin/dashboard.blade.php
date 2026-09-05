@@ -103,58 +103,6 @@
             </div>
         </div>
 
-        <!-- Tracking Sesi Demo Card (Emoji-Free) -->
-        <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-sm font-bold text-slate-800">Tracking Pengunjung Demo (LUNOU Leads)</h2>
-                    <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block mt-0.5">Sesi eksplorasi yang aktif & selesai</span>
-                </div>
-                <span class="bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-full text-[10px] font-black uppercase">
-                    {{ count($demoTracks) }} Total
-                </span>
-            </div>
-
-            @if($demoTracks->isEmpty())
-                <div class="border border-dashed border-slate-200 rounded-2xl py-8 px-4 text-center">
-                    <p class="text-xs font-semibold text-slate-400">Belum ada aktivitas eksplorasi demo yang terdaftar.</p>
-                </div>
-            @else
-                <div class="overflow-x-auto font-sans">
-                    <table class="w-full text-left text-xs font-semibold">
-                        <thead>
-                            <tr class="border-b border-slate-100 text-slate-400 uppercase tracking-wider text-[9px]">
-                                <th class="py-3 pr-2">Nama</th>
-                                <th class="py-3 px-2">Email</th>
-                                <th class="py-3 px-2">Instansi</th>
-                                <th class="py-3 px-2">Tipe Demo</th>
-                                <th class="py-3 px-2">IP Address</th>
-                                <th class="py-3 pl-2 text-right">Waktu</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-50 text-slate-700">
-                            @foreach($demoTracks as $track)
-                                <tr class="hover:bg-slate-50/50 transition-colors">
-                                    <td class="py-3 pr-2 font-bold text-slate-900">{{ $track->name }}</td>
-                                    <td class="py-3 px-2 text-slate-500">{{ $track->email }}</td>
-                                    <td class="py-3 px-2 text-slate-600">{{ $track->organization ?: '-' }}</td>
-                                    <td class="py-3 px-2">
-                                        <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase border {{ $track->token === 'demo_management' ? 'bg-purple-50 border-purple-100 text-purple-700' : 'bg-indigo-50 border-indigo-100 text-indigo-700' }}">
-                                            {{ $track->token === 'demo_management' ? 'Management' : 'Karyawan' }}
-                                        </span>
-                                    </td>
-                                    <td class="py-3 px-2 font-mono text-[10px] text-slate-400">{{ $track->ip_address }}</td>
-                                    <td class="py-3 pl-2 text-right text-slate-400 text-[10px]">
-                                        {{ \Carbon\Carbon::parse($track->created_at)->diffForHumans() }}
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-
     </div>
 
     <!-- Kolom Kanan / Sidebar Panel (Lebar: 4 Kolom) -->

@@ -20,12 +20,6 @@ class AISettingsController extends Controller
      */
     public function index(): View
     {
-        if (session()->has('demo_track_id')) {
-            $settings = collect();
-
-            return view('superadmin.ai-settings.index', compact('settings'));
-        }
-
         $settings = AISetting::where('user_id', Auth::id())->latest()->get();
 
         return view('superadmin.ai-settings.index', compact('settings'));
@@ -36,10 +30,6 @@ class AISettingsController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        if (session()->has('demo_track_id')) {
-            return back()->with('error', 'Aksi dinonaktifkan di akun demo untuk menjaga keamanan kredensial.');
-        }
-
         $request->validate([
             'provider' => ['required', 'string', 'in:openai,gemini,openrouter'],
             'name' => ['required', 'string', 'max:100'],
@@ -71,10 +61,6 @@ class AISettingsController extends Controller
      */
     public function update(Request $request, AISetting $aiSetting): RedirectResponse
     {
-        if (session()->has('demo_track_id')) {
-            return back()->with('error', 'Aksi dinonaktifkan di akun demo untuk menjaga keamanan kredensial.');
-        }
-
         if ($aiSetting->user_id !== Auth::id()) {
             abort(403);
         }
@@ -115,10 +101,6 @@ class AISettingsController extends Controller
      */
     public function destroy(AISetting $aiSetting): RedirectResponse
     {
-        if (session()->has('demo_track_id')) {
-            return back()->with('error', 'Aksi dinonaktifkan di akun demo untuk menjaga keamanan kredensial.');
-        }
-
         if ($aiSetting->user_id !== Auth::id()) {
             abort(403);
         }
@@ -134,10 +116,6 @@ class AISettingsController extends Controller
      */
     public function activate(AISetting $aiSetting): RedirectResponse
     {
-        if (session()->has('demo_track_id')) {
-            return back()->with('error', 'Aksi dinonaktifkan di akun demo untuk menjaga keamanan kredensial.');
-        }
-
         if ($aiSetting->user_id !== Auth::id()) {
             abort(403);
         }
@@ -161,12 +139,6 @@ class AISettingsController extends Controller
      */
     public function test(Request $request): JsonResponse
     {
-        if (session()->has('demo_track_id')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Fitur uji coba koneksi dinonaktifkan untuk akun demo.',
-            ], 403);
-        }
 
         $request->validate([
             'id' => ['nullable', 'integer'],

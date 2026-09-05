@@ -20,15 +20,9 @@
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Pengaturan Gateway AI</h1>
             <p class="text-xs text-slate-400 mt-0.5">Kelola credentials, provider default, dan parameter model AI multi-gateway secara dinamis.</p>
         </div>
-        @if(session()->has('demo_track_id'))
-            <button type="button" disabled class="px-5 py-2.5 bg-slate-200 text-slate-400 text-xs font-bold rounded-xl cursor-not-allowed opacity-75" title="Dinonaktifkan di Akun Demo">
-                Tambah Konfigurasi Baru
-            </button>
-        @else
-            <button type="button" onclick="openCreateModal()" class="px-5 py-2.5 bg-{{ $accentColor }}-650 hover:bg-{{ $accentColor }}-700 text-white text-xs font-bold rounded-xl shadow-md transition-all">
-                Tambah Konfigurasi Baru
-            </button>
-        @endif
+        <button type="button" onclick="openCreateModal()" class="px-5 py-2.5 bg-{{ $accentColor }}-650 hover:bg-{{ $accentColor }}-700 text-white text-xs font-bold rounded-xl shadow-md transition-all">
+            Tambah Konfigurasi Baru
+        </button>
     </div>
 
     <!-- Session Flash Feedback Messages -->

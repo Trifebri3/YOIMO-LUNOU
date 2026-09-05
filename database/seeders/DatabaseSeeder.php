@@ -43,9 +43,5 @@ class DatabaseSeeder extends Seeder
             'password' => $password,
             'role' => 'user',
         ]);
-
-        if (! app()->runningUnitTests()) {
-            $this->call(DemoDummySeeder::class);
-        }
     }
 }

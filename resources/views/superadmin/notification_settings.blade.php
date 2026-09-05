@@ -93,15 +93,9 @@
                 </div>
 
                 <div class="flex justify-end pt-4 border-t border-slate-50">
-                    @if(session()->has('demo_track_id'))
-                        <button type="button" disabled class="px-5 py-2.5 text-xs font-bold text-slate-400 bg-slate-200 transition-colors rounded-xl shadow-sm font-sans cursor-not-allowed opacity-75" title="Dinonaktifkan di Akun Demo">
-                            Simpan Konfigurasi
-                        </button>
-                    @else
-                        <button type="submit" class="px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors rounded-xl shadow-sm font-sans cursor-pointer">
-                            Simpan Konfigurasi
-                        </button>
-                    @endif
+                    <button type="submit" class="px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors rounded-xl shadow-sm font-sans cursor-pointer">
+                        Simpan Konfigurasi
+                    </button>
                 </div>
             </div>
         </div>
@@ -136,15 +130,9 @@
                 </div>
 
                 <div class="flex justify-end pt-4 border-t border-slate-50">
-                    @if(session()->has('demo_track_id'))
-                        <button type="button" disabled class="px-5 py-2.5 text-xs font-bold text-slate-400 bg-slate-200 transition-colors rounded-xl shadow-sm font-sans cursor-not-allowed opacity-75" title="Dinonaktifkan di Akun Demo">
-                            Simpan Konfigurasi
-                        </button>
-                    @else
-                        <button type="submit" class="px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors rounded-xl shadow-sm font-sans cursor-pointer">
-                            Simpan Konfigurasi
-                        </button>
-                    @endif
+                    <button type="submit" class="px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors rounded-xl shadow-sm font-sans cursor-pointer">
+                        Simpan Konfigurasi
+                    </button>
                 </div>
             </div>
         </div>
@@ -170,15 +158,9 @@
                 @csrf
                 <input type="email" name="test_email_address" placeholder="tujuan@email.com" required
                        class="flex-1 px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold text-slate-700 font-sans">
-                @if(session()->has('demo_track_id'))
-                    <button type="button" disabled class="px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-200 transition-colors rounded-xl shadow-sm whitespace-nowrap cursor-not-allowed opacity-75" title="Dinonaktifkan di Akun Demo">
-                        Kirim Test Email
-                    </button>
-                @else
-                    <button type="submit" class="px-4 py-2.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition-colors rounded-xl shadow-sm whitespace-nowrap cursor-pointer">
-                        Kirim Test Email
-                    </button>
-                @endif
+                <button type="submit" class="px-4 py-2.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 transition-colors rounded-xl shadow-sm whitespace-nowrap cursor-pointer">
+                    Kirim Test Email
+                </button>
             </form>
         </div>
 
@@ -200,15 +182,9 @@
                 @csrf
                 <input type="text" name="test_whatsapp_number" placeholder="628xxxxxxxxxx" required
                        class="flex-1 px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold text-slate-700 font-sans">
-                @if(session()->has('demo_track_id'))
-                    <button type="button" disabled class="px-4 py-2.5 text-xs font-bold text-slate-400 bg-slate-200 transition-colors rounded-xl shadow-sm whitespace-nowrap cursor-not-allowed opacity-75 font-sans" title="Dinonaktifkan di Akun Demo">
-                        Kirim Test WA
-                    </button>
-                @else
-                    <button type="submit" class="px-4 py-2.5 text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors rounded-xl shadow-sm whitespace-nowrap cursor-pointer font-sans">
-                        Kirim Test WA
-                    </button>
-                @endif
+                <button type="submit" class="px-4 py-2.5 text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-600 transition-colors rounded-xl shadow-sm whitespace-nowrap cursor-pointer font-sans">
+                    Kirim Test WA
+                </button>
             </form>
         </div>
     </div>

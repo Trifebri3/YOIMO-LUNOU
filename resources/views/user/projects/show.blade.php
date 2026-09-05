@@ -426,10 +426,13 @@
                                     <div class="space-y-1">
                                         <h4 class="text-xs font-black text-slate-800 leading-snug">{{ $ag->title }}</h4>
                                         <div class="flex items-center gap-2 text-[10px] text-slate-400 font-bold">
-                                            <span>Jam: {{ $ag->start_date->format('H:i') }}</span>
-                                            @if($ag->location_link)
+                                            <span>Jam: {{ $ag->start_time ? date('H:i', strtotime($ag->start_time)) : 'All Day' }}</span>
+                                            @if($ag->location_type === 'online' && $ag->meeting_url)
                                                 <span>•</span>
-                                                <a href="{{ $ag->location_link }}" target="_blank" class="text-indigo-600 hover:underline">Link Rapat &rarr;</a>
+                                                <a href="{{ $ag->meeting_url }}" target="_blank" class="text-indigo-600 hover:underline">Link Rapat &rarr;</a>
+                                            @elseif($ag->location_address)
+                                                <span>•</span>
+                                                <span class="text-slate-500">📍 {{ Str::limit($ag->location_address, 20) }}</span>
                                             @endif
                                         </div>
                                     </div>
@@ -911,48 +914,856 @@
 
     <!-- TAB 4: LINIMASA / ROADMAP -->
     @if($activeTab === 'roadmap')
-        <div class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-            <h2 class="text-base font-black text-slate-900 tracking-tight">Alur Linimasa & Target Capaian</h2>
-            <div class="relative pl-6 border-l-2 border-indigo-200 space-y-8">
-                @forelse($project->roadmaps as $idx => $rm)
-                    <div class="relative bg-slate-50 border border-slate-100 rounded-3xl p-6 space-y-4">
-                        <div class="absolute -left-[33px] top-6 w-5 h-5 rounded-full border-4 border-white shadow-sm {{ $rm->status === 'Completed' ? 'bg-emerald-500' : ($rm->status === 'In Progress' ? 'bg-indigo-600 animate-pulse' : 'bg-slate-400') }}"></div>
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <span class="text-[10px] font-black uppercase text-indigo-600">FASE {{ $idx + 1 }}</span>
-                                <h3 class="text-base font-black text-slate-900">{{ $rm->title }}</h3>
-                                <span class="text-xs text-slate-400 font-semibold">{{ $rm->start_date->format('d M Y') }} &rarr; {{ $rm->end_date->format('d M Y') }}</span>
-                            </div>
-                            <span class="px-3 py-1 rounded-xl text-[10px] font-black uppercase {{ $rm->status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-100 text-indigo-800' }}">
-                                {{ $rm->status }}
-                            </span>
+        @php
+            $allRoadmaps = $project->roadmaps;
+            $totalRoadmaps = $allRoadmaps->count();
+            $completedRoadmaps = $allRoadmaps->where('status', 'Completed')->count();
+            $inProgressRoadmaps = $allRoadmaps->where('status', 'In Progress')->count();
+            $pendingRoadmaps = $allRoadmaps->where('status', 'Pending')->count();
+        @endphp
+
+        <div x-data="{
+            selectedStatus: 'all',
+            searchQuery: ''
+        }" class="space-y-6">
+
+            <!-- Banner Ringkasan & Metrik Linimasa -->
+            <div class="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute top-0 right-1/4 w-52 h-52 bg-purple-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="space-y-2 max-w-xl">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-black uppercase tracking-widest text-indigo-300">
+                            <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            <span>Roadmap Proyek & Rencana Kerja</span>
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white">Alur Linimasa & Target Capaian</h2>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+                            Struktur tahapan strategis, target capaian luaran kunci (deliverables), alokasi waktu pengerjaan, dan monitoring tugas per fase.
+                        </p>
+                    </div>
+
+                    <!-- Statistik Cepat -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
+                        <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-3 sm:p-4 text-center">
+                            <span class="text-[10px] font-bold text-slate-300 block uppercase tracking-wider">Total Fase</span>
+                            <span class="text-xl sm:text-2xl font-black text-white">{{ $totalRoadmaps }}</span>
+                        </div>
+                        <div class="bg-indigo-500/20 backdrop-blur-md border border-indigo-400/30 rounded-2xl p-3 sm:p-4 text-center">
+                            <span class="text-[10px] font-bold text-indigo-300 block uppercase tracking-wider">Berjalan</span>
+                            <span class="text-xl sm:text-2xl font-black text-indigo-200">{{ $inProgressRoadmaps }}</span>
+                        </div>
+                        <div class="bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 rounded-2xl p-3 sm:p-4 text-center">
+                            <span class="text-[10px] font-bold text-emerald-300 block uppercase tracking-wider">Selesai</span>
+                            <span class="text-xl sm:text-2xl font-black text-emerald-200">{{ $completedRoadmaps }}</span>
+                        </div>
+                        <div class="bg-slate-500/20 backdrop-blur-md border border-slate-400/30 rounded-2xl p-3 sm:p-4 text-center">
+                            <span class="text-[10px] font-bold text-slate-300 block uppercase tracking-wider">Menunggu</span>
+                            <span class="text-xl sm:text-2xl font-black text-slate-200">{{ $pendingRoadmaps }}</span>
                         </div>
                     </div>
-                @empty
-                    <p class="text-xs text-slate-400 italic">Belum ada linimasa.</p>
-                @endforelse
+                </div>
             </div>
+
+            <!-- Filter & Pencarian Linimasa -->
+            <div class="bg-white border border-slate-100 rounded-3xl p-4 sm:p-5 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <!-- Search Input -->
+                    <div class="relative flex-1">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <input type="text" x-model="searchQuery" placeholder="Cari nama fase, target luaran, atau deskripsi..." 
+                               class="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                        <button type="button" x-show="searchQuery" @click="searchQuery = ''" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm font-bold">×</button>
+                    </div>
+
+                    <!-- Status Filter Tabs -->
+                    <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl shrink-0 text-xs font-bold">
+                        <button type="button" @click="selectedStatus = 'all'" :class="selectedStatus === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-xl transition-all">
+                            Semua Fase ({{ $totalRoadmaps }})
+                        </button>
+                        <button type="button" @click="selectedStatus = 'In Progress'" :class="selectedStatus === 'In Progress' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-xl transition-all">
+                            Sedang Berjalan ({{ $inProgressRoadmaps }})
+                        </button>
+                        <button type="button" @click="selectedStatus = 'Completed'" :class="selectedStatus === 'Completed' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-xl transition-all">
+                            Selesai ({{ $completedRoadmaps }})
+                        </button>
+                        <button type="button" @click="selectedStatus = 'Pending'" :class="selectedStatus === 'Pending' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-xl transition-all">
+                            Menunggu ({{ $pendingRoadmaps }})
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daftar Linimasa Vertical Tree -->
+            <div class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm">
+                <div class="relative pl-6 sm:pl-8 border-l-2 border-indigo-200 space-y-10">
+                    @forelse($project->roadmaps as $idx => $rm)
+                        @php
+                            $durationDays = $rm->start_date && $rm->end_date ? ($rm->start_date->diffInDays($rm->end_date) + 1) : 0;
+                            $objectives = $rm->objectives ?? [];
+                            $totalObj = count($objectives);
+                            $achievedObj = count(array_filter($objectives, fn($o) => !empty($o['is_achieved'])));
+                            
+                            $statusBadge = match($rm->status) {
+                                'Completed'   => ['bg' => 'bg-emerald-50 text-emerald-700 border-emerald-200', 'label' => 'Selesai'],
+                                'In Progress' => ['bg' => 'bg-indigo-50 text-indigo-700 border-indigo-200 animate-pulse', 'label' => 'Sedang Berjalan'],
+                                default       => ['bg' => 'bg-slate-100 text-slate-600 border-slate-200', 'label' => 'Menunggu / Terjadwal'],
+                            };
+
+                            $searchHaystack = strtolower($rm->title . ' ' . $rm->description . ' ' . json_encode($objectives));
+                        @endphp
+
+                        <div x-show="(selectedStatus === 'all' || selectedStatus === '{{ $rm->status }}') && ('{{ addslashes($searchHaystack) }}'.includes(searchQuery.toLowerCase()))"
+                             class="relative bg-slate-50/70 border border-slate-100 rounded-3xl p-6 sm:p-8 space-y-6 hover:shadow-lg hover:border-indigo-100 transition-all group">
+
+                            <!-- Bullet Node on Timeline -->
+                            <div class="absolute -left-[37px] sm:-left-[45px] top-6 w-8 h-8 rounded-full border-4 border-white shadow-md flex items-center justify-center font-black text-xs {{ $rm->status === 'Completed' ? 'bg-emerald-500 text-white' : ($rm->status === 'In Progress' ? 'bg-indigo-600 text-white ring-4 ring-indigo-100 animate-pulse' : 'bg-slate-300 text-slate-700') }}">
+                                @if($rm->status === 'Completed')
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                @elseif($rm->status === 'In Progress')
+                                    <span class="w-2 h-2 rounded-full bg-white"></span>
+                                @else
+                                    <span>{{ $idx + 1 }}</span>
+                                @endif
+                            </div>
+
+                            <!-- Header Fase: Kategori, Judul, Tanggal, & Status -->
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 border border-indigo-200">
+                                            FASE {{ $idx + 1 }}
+                                        </span>
+                                        <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase border {{ $statusBadge['bg'] }}">
+                                            {{ $statusBadge['label'] }}
+                                        </span>
+                                    </div>
+                                    <h3 class="text-lg sm:text-xl font-black text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors">
+                                        {{ $rm->title }}
+                                    </h3>
+                                    <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 flex-wrap">
+                                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        <span>{{ $rm->start_date ? $rm->start_date->isoFormat('D MMMM Y') : '-' }} &rarr; {{ $rm->end_date ? $rm->end_date->isoFormat('D MMMM Y') : '-' }}</span>
+                                        <span class="px-2 py-0.5 bg-slate-200/80 text-slate-700 rounded-md text-[10px] font-bold">
+                                            {{ $durationDays }} Hari Pengerjaan
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Progress Percentage Circle / Badge -->
+                                <div class="shrink-0 p-3 bg-white border border-slate-100 rounded-2xl text-center min-w-[110px] shadow-sm">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ketercapaian</span>
+                                    <span class="text-2xl font-black text-indigo-900 block leading-tight">{{ $rm->progress_percentage }}%</span>
+                                    <span class="text-[10px] text-slate-500 font-semibold block">
+                                        {{ $rm->status === 'Completed' ? 'Tuntas' : ($rm->progress_percentage > 0 ? 'Sedang Diproses' : 'Belum Dimulai') }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar Visual -->
+                            <div class="space-y-1.5">
+                                <div class="flex items-center justify-between text-[11px] font-bold text-slate-500">
+                                    <span>Target Progres Fase</span>
+                                    <span class="text-slate-800">{{ $rm->progress_percentage }}% Tercapai</span>
+                                </div>
+                                <div class="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden">
+                                    <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 h-full rounded-full transition-all duration-500" 
+                                         style="width: {{ max(5, intval($rm->progress_percentage)) }}%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Deskripsi Lengkap Fase -->
+                            @if($rm->description)
+                                <div class="p-4 bg-white border border-slate-100 rounded-2xl space-y-1">
+                                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Ruang Lingkup & Uraian Fase:</span>
+                                    <p class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium whitespace-pre-line">
+                                        {{ $rm->description }}
+                                    </p>
+                                </div>
+                            @endif
+
+                            <!-- Target Luaran Kunci (Deliverable Objectives Checklist) -->
+                            @if(!empty($objectives))
+                                <div class="p-5 bg-white border border-slate-100 rounded-2xl space-y-3 shadow-sm">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-base">🎯</span>
+                                            <span class="text-xs font-black uppercase tracking-wider text-slate-800">Target & Luaran Capaian (Deliverables)</span>
+                                        </div>
+                                        <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                            {{ $achievedObj }} / {{ $totalObj }} Target Tercapai
+                                        </span>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 gap-2 pt-1">
+                                        @foreach($objectives as $obj)
+                                            @php $isAchieved = !empty($obj['is_achieved']); @endphp
+                                            <div class="p-3 rounded-xl border text-xs flex items-start gap-3 transition-all {{ $isAchieved ? 'bg-emerald-50/50 border-emerald-200/80 text-emerald-900' : 'bg-slate-50/80 border-slate-100 text-slate-700' }}">
+                                                <div class="shrink-0 mt-0.5 w-4 h-4 rounded-md flex items-center justify-center font-bold text-[10px] {{ $isAchieved ? 'bg-emerald-500 text-white' : 'border border-slate-300 bg-white text-transparent' }}">
+                                                    ✓
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <span class="font-medium leading-relaxed block {{ $isAchieved ? 'line-through text-emerald-800/80' : 'text-slate-800' }}">
+                                                        {{ $obj['target'] ?? '' }}
+                                                    </span>
+                                                </div>
+                                                <span class="text-[9px] font-black uppercase px-2 py-0.5 rounded shrink-0 {{ $isAchieved ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600' }}">
+                                                    {{ $isAchieved ? 'Selesai' : 'Dalam Proses' }}
+                                                </span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+
+                            <!-- Daftar Tugas Proyek Terkait Fase Ini -->
+                            <div class="p-5 bg-white border border-slate-100 rounded-2xl space-y-3 shadow-sm">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-base">📋</span>
+                                        <span class="text-xs font-black uppercase tracking-wider text-slate-800">Tugas Proyek di Fase Ini</span>
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-400">
+                                        {{ $rm->tasks->count() }} Tugas Terhubung
+                                    </span>
+                                </div>
+
+                                @if($rm->tasks->count() > 0)
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                                        @foreach($rm->tasks as $t)
+                                            <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2 hover:bg-slate-100/80 transition-all flex flex-col justify-between">
+                                                <div class="space-y-1">
+                                                    <div class="flex items-center justify-between gap-1">
+                                                        <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase {{ $t->status === 'Completed' ? 'bg-emerald-100 text-emerald-800' : ($t->status === 'In Progress' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-200 text-slate-700') }}">
+                                                            {{ $t->status }}
+                                                        </span>
+                                                        <span class="text-[10px] font-bold text-slate-400">{{ $t->progress_percentage }}%</span>
+                                                    </div>
+                                                    <h4 class="text-xs font-bold text-slate-900 line-clamp-2 leading-snug">{{ $t->title }}</h4>
+                                                </div>
+
+                                                <div class="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-500 font-semibold">
+                                                    <span class="truncate">{{ $t->assignee ? $t->assignee->name : 'Terbuka' }}</span>
+                                                    @if($t->due_date)
+                                                        <span>{{ $t->due_date->format('d M') }}</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs text-slate-500">
+                                        <span>Belum ada tugas spesifik yang ditautkan ke fase ini.</span>
+                                        <a href="{{ route('user.projects.show', [$project->id, 'tab' => 'tasks']) }}" class="text-indigo-600 font-bold hover:underline flex items-center gap-1">
+                                            <span>Buka Papan Tugas</span>
+                                            <span>&rarr;</span>
+                                        </a>
+                                    </div>
+                                @endif
+                            </div>
+
+                        </div>
+                    @empty
+                        <div class="p-12 text-center bg-slate-50 border border-dashed border-slate-200 rounded-3xl space-y-3">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            </div>
+                            <h4 class="text-sm font-black text-slate-800">Belum Ada Linimasa Terdaftar</h4>
+                            <p class="text-xs text-slate-400 max-w-sm mx-auto">Fase linimasa dan target capaian proyek ini belum dikonfigurasi.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </div>
+
         </div>
     @endif
 
     <!-- TAB 5: AGENDA -->
     @if($activeTab === 'agendas')
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            @forelse($project->agendas as $ag)
-                <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4 hover:shadow-md transition-all flex flex-col justify-between">
-                    <div class="space-y-2">
-                        <span class="px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">{{ $ag->category }}</span>
-                        <h3 class="text-base font-black text-slate-900">{{ $ag->title }}</h3>
+        @php
+            $categoryStyles = [
+                'Meeting Online'       => ['bg' => 'bg-blue-50', 'text' => 'text-blue-700', 'border' => 'border-blue-200', 'dot' => 'bg-blue-500'],
+                'Meeting Offline'      => ['bg' => 'bg-indigo-50', 'text' => 'text-indigo-700', 'border' => 'border-indigo-200', 'dot' => 'bg-indigo-500'],
+                'Workshop & Pelatihan' => ['bg' => 'bg-teal-50', 'text' => 'text-teal-700', 'border' => 'border-teal-200', 'dot' => 'bg-teal-500'],
+                'Roadshow & Kunjungan' => ['bg' => 'bg-rose-50', 'text' => 'text-rose-700', 'border' => 'border-rose-200', 'dot' => 'bg-rose-500'],
+                'Olahraga & Kesehatan' => ['bg' => 'bg-emerald-50', 'text' => 'text-emerald-700', 'border' => 'border-emerald-200', 'dot' => 'bg-emerald-500'],
+                'Liburan & Outing'     => ['bg' => 'bg-amber-50', 'text' => 'text-amber-700', 'border' => 'border-amber-200', 'dot' => 'bg-amber-500'],
+                'Nonton & Hiburan'     => ['bg' => 'bg-purple-50', 'text' => 'text-purple-700', 'border' => 'border-purple-200', 'dot' => 'bg-purple-500'],
+            ];
+
+            $allAgendas = $project->agendas;
+            $totalCount = $allAgendas->count();
+            $upcomingCount = $allAgendas->where('start_date', '>=', now()->startOfDay())->count();
+            $onlineCount = $allAgendas->where('location_type', 'online')->count();
+            $completedCount = $allAgendas->where('status', 'Completed')->count();
+            $uniqueCategories = $allAgendas->pluck('category')->unique()->filter();
+        @endphp
+
+        <div x-data="{
+            selectedCategory: 'all',
+            selectedStatus: 'all',
+            searchQuery: '',
+            activeModalAgenda: null,
+            copied: false,
+            openDetail(data) {
+                this.activeModalAgenda = data;
+            },
+            closeDetail() {
+                this.activeModalAgenda = null;
+            },
+            copyToClipboard(text, msg = 'Disalin ke clipboard!') {
+                if (!text) return;
+                navigator.clipboard.writeText(text).then(() => {
+                    this.copied = true;
+                    setTimeout(() => { this.copied = false; }, 2500);
+                });
+            },
+            shareAgenda(agenda) {
+                const text = `*AGENDA YOIMO: ${agenda.title}*\n`
+                    + `📅 Tanggal: ${agenda.date_formatted}\n`
+                    + `⏰ Waktu: ${agenda.time_formatted}\n`
+                    + `📍 Lokasi: ${agenda.location_type === 'online' ? (agenda.meeting_url || 'Online Meeting') : (agenda.location_address || 'Offline')}\n`
+                    + (agenda.description ? `\n📝 Deskripsi: ${agenda.description}\n` : '')
+                    + `\nBuka di Yoimo Workspace: {{ url()->current() }}?tab=agendas`;
+                this.copyToClipboard(text, 'Ringkasan agenda disalin! Siap dibagikan.');
+            }
+        }" class="space-y-6">
+
+            <!-- Banner Ringkasan & Metrik Agenda -->
+            <div class="bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute top-0 right-1/4 w-52 h-52 bg-purple-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="space-y-2 max-w-xl">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[10px] font-black uppercase tracking-widest text-indigo-300">
+                            <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span>Kalender & Rincian Agenda Kegiatan</span>
+                        </div>
+                        <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white">Jadwal Koordinasi & Agenda Tim</h2>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+                            Rincian lengkap pertemuan proyek, koordinasi daring, workshop lapangan, daftar peserta, dan notulensi evaluasi kegiatan secara transparan.
+                        </p>
                     </div>
-                    <div class="pt-3 border-t border-slate-100">
-                        @if($ag->location_type === 'online' && $ag->meeting_url)
-                            <a href="{{ $ag->meeting_url }}" target="_blank" class="w-full text-center py-2 bg-indigo-600 text-white font-bold text-xs rounded-xl block">Buka Link Meeting &rarr;</a>
-                        @endif
+
+                    <!-- Statistik Cepat -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
+                        <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-3 sm:p-4 text-center">
+                            <span class="text-[10px] font-bold text-slate-300 block uppercase tracking-wider">Total Agenda</span>
+                            <span class="text-xl sm:text-2xl font-black text-white">{{ $totalCount }}</span>
+                        </div>
+                        <div class="bg-emerald-500/20 backdrop-blur-md border border-emerald-400/30 rounded-2xl p-3 sm:p-4 text-center">
+                            <span class="text-[10px] font-bold text-emerald-300 block uppercase tracking-wider">Mendatang</span>
+                            <span class="text-xl sm:text-2xl font-black text-emerald-200">{{ $upcomingCount }}</span>
+                        </div>
+                        <div class="bg-blue-500/20 backdrop-blur-md border border-blue-400/30 rounded-2xl p-3 sm:p-4 text-center">
+                            <span class="text-[10px] font-bold text-blue-300 block uppercase tracking-wider">Online</span>
+                            <span class="text-xl sm:text-2xl font-black text-blue-200">{{ $onlineCount }}</span>
+                        </div>
+                        <div class="bg-purple-500/20 backdrop-blur-md border border-purple-400/30 rounded-2xl p-3 sm:p-4 text-center">
+                            <span class="text-[10px] font-bold text-purple-300 block uppercase tracking-wider">Selesai</span>
+                            <span class="text-xl sm:text-2xl font-black text-purple-200">{{ $completedCount }}</span>
+                        </div>
                     </div>
                 </div>
-            @empty
-                <div class="col-span-full bg-white border border-dashed border-slate-200 rounded-3xl p-12 text-center text-xs text-slate-400">Belum ada agenda.</div>
-            @endforelse
+            </div>
+
+            <!-- Filter, Status & Pencarian -->
+            <div class="bg-white border border-slate-100 rounded-3xl p-4 sm:p-5 shadow-sm space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <!-- Search Input -->
+                    <div class="relative flex-1">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        <input type="text" x-model="searchQuery" placeholder="Cari nama agenda, topik bahasan, atau lokasi..." 
+                               class="w-full pl-10 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                        <button type="button" x-show="searchQuery" @click="searchQuery = ''" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-sm font-bold">×</button>
+                    </div>
+
+                    <!-- Status Filter Tabs -->
+                    <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl shrink-0 text-xs font-bold">
+                        <button type="button" @click="selectedStatus = 'all'" :class="selectedStatus === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-xl transition-all">
+                            Semua Status
+                        </button>
+                        <button type="button" @click="selectedStatus = 'upcoming'" :class="selectedStatus === 'upcoming' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-xl transition-all">
+                            Mendatang ({{ $upcomingCount }})
+                        </button>
+                        <button type="button" @click="selectedStatus = 'completed'" :class="selectedStatus === 'completed' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'" class="px-3.5 py-1.5 rounded-xl transition-all">
+                            Selesai ({{ $completedCount }})
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category Chips -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                    <button type="button" @click="selectedCategory = 'all'" 
+                            :class="selectedCategory === 'all' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100'"
+                            class="px-3.5 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all">
+                        Semua Kategori ({{ $totalCount }})
+                    </button>
+                    @foreach($uniqueCategories as $cat)
+                        @php
+                            $catCount = $allAgendas->where('category', $cat)->count();
+                        @endphp
+                        <button type="button" @click="selectedCategory = '{{ addslashes($cat) }}'" 
+                                :class="selectedCategory === '{{ addslashes($cat) }}' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100'"
+                                class="px-3.5 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all">
+                            {{ $cat }} ({{ $catCount }})
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- Toast Notification saat Copy -->
+            <div x-show="copied" x-cloak x-transition 
+                 class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl text-xs font-bold shadow-2xl flex items-center gap-2 border border-slate-700">
+                <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>Berhasil disalin ke clipboard!</span>
+            </div>
+
+            <!-- Grid Daftar Agenda -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @forelse($project->agendas as $ag)
+                    @php
+                        $catConf = $categoryStyles[$ag->category] ?? ['bg' => 'bg-slate-100', 'text' => 'text-slate-700', 'border' => 'border-slate-200', 'dot' => 'bg-slate-400'];
+                        $isUpcoming = $ag->start_date && $ag->start_date >= now()->startOfDay();
+                        $isToday = $ag->start_date && $ag->start_date->isToday();
+                        $isTomorrow = $ag->start_date && $ag->start_date->isTomorrow();
+                        $isPast = $ag->start_date && $ag->start_date->isPast() && !$isToday;
+                        $isInvited = !empty($ag->attendee_ids) && in_array(Auth::id(), $ag->attendee_ids);
+
+                        $stBadge = match($ag->status) {
+                            'Ongoing'   => ['bg' => 'bg-amber-50', 'text' => 'text-amber-700', 'border' => 'border-amber-200', 'label' => 'Sedang Berlangsung'],
+                            'Completed' => ['bg' => 'bg-emerald-50', 'text' => 'text-emerald-700', 'border' => 'border-emerald-200', 'label' => 'Selesai'],
+                            'Cancelled' => ['bg' => 'bg-rose-50', 'text' => 'text-rose-700', 'border' => 'border-rose-200', 'label' => 'Dibatalkan'],
+                            default     => ['bg' => 'bg-slate-100', 'text' => 'text-slate-600', 'border' => 'border-slate-200', 'label' => 'Terjadwal'],
+                        };
+
+                        $attendeeList = collect($ag->attendee_ids ?? [])->map(function($uId) use ($agendaAttendees) {
+                            $user = $agendaAttendees->get($uId);
+                            return [
+                                'id' => $uId,
+                                'name' => $user->name ?? ('User #' . $uId),
+                                'position' => $user->position ?? 'Anggota Tim',
+                                'role' => $user->role ?? 'User',
+                                'avatar' => $user->avatar ?? null,
+                                'is_me' => $uId == Auth::id(),
+                            ];
+                        })->values();
+
+                        $gcalStart = $ag->start_date ? $ag->start_date->format('Ymd') . ($ag->start_time ? 'T' . str_replace(':', '', substr($ag->start_time, 0, 5)) . '00' : '') : '';
+                        $gcalEnd = ($ag->end_date ?? $ag->start_date) ? ($ag->end_date ?? $ag->start_date)->format('Ymd') . ($ag->end_time ? 'T' . str_replace(':', '', substr($ag->end_time, 0, 5)) . '00' : '') : $gcalStart;
+                        $gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+                            . '&text=' . urlencode($ag->title)
+                            . ($gcalStart ? '&dates=' . $gcalStart . '/' . ($gcalEnd ?: $gcalStart) : '')
+                            . '&details=' . urlencode(($ag->description ? $ag->description . "\n\n" : '') . 'Penyelenggara: ' . ($ag->creator->name ?? 'Tim Yoimo'))
+                            . '&location=' . urlencode($ag->location_type === 'online' ? ($ag->meeting_url ?? 'Virtual Online') : ($ag->location_address ?? 'Offline'));
+
+                        $agendaData = [
+                            'id' => $ag->id,
+                            'title' => $ag->title,
+                            'category' => $ag->category,
+                            'cat_bg' => $catConf['bg'],
+                            'cat_text' => $catConf['text'],
+                            'cat_border' => $catConf['border'],
+                            'status' => $ag->status,
+                            'status_label' => $stBadge['label'],
+                            'status_bg' => $stBadge['bg'],
+                            'status_text' => $stBadge['text'],
+                            'status_border' => $stBadge['border'],
+                            'recurrence' => $ag->recurrence,
+                            'recurrence_days' => $ag->recurrence_days,
+                            'date_formatted' => $ag->start_date ? $ag->start_date->isoFormat('dddd, D MMMM Y') : 'Jadwal belum diatur',
+                            'time_formatted' => ($ag->start_time ? date('H:i', strtotime($ag->start_time)) : 'All Day') . ($ag->end_time ? ' - ' . date('H:i', strtotime($ag->end_time)) . ' WIB' : ''),
+                            'location_type' => $ag->location_type,
+                            'meeting_url' => $ag->meeting_url,
+                            'location_address' => $ag->location_address,
+                            'description' => $ag->description ?: 'Tidak ada catatan deskripsi tambahan.',
+                            'agenda_notes' => $ag->agenda_notes,
+                            'creator_name' => $ag->creator->name ?? 'Tim Proyek',
+                            'creator_position' => $ag->creator->position ?? ($ag->creator->role ?? 'Anggota'),
+                            'is_invited' => $isInvited,
+                            'attendees' => $attendeeList->toArray(),
+                            'gcal_url' => $gcalUrl,
+                        ];
+
+                        $searchHaystack = strtolower($ag->title . ' ' . $ag->description . ' ' . $ag->category . ' ' . $ag->location_address . ' ' . ($ag->creator->name ?? ''));
+                    @endphp
+
+                    <div x-show="(selectedCategory === 'all' || selectedCategory === '{{ addslashes($ag->category) }}') && 
+                                (selectedStatus === 'all' || (selectedStatus === 'upcoming' && {{ $isUpcoming ? 'true' : 'false' }}) || (selectedStatus === 'completed' && '{{ $ag->status }}' === 'Completed')) &&
+                                ('{{ addslashes($searchHaystack) }}'.includes(searchQuery.toLowerCase()))"
+                         class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all duration-300 flex flex-col justify-between space-y-5 group relative">
+
+                        <div class="space-y-4">
+                            <!-- Top: Category & Status Badges -->
+                            <div class="flex items-center justify-between gap-2 flex-wrap">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border {{ $catConf['bg'] }} {{ $catConf['text'] }} {{ $catConf['border'] }} flex items-center gap-1.5">
+                                        <span class="w-1.5 h-1.5 rounded-full {{ $catConf['dot'] }}"></span>
+                                        <span>{{ $ag->category }}</span>
+                                    </span>
+
+                                    @if($ag->recurrence && $ag->recurrence !== 'once')
+                                        <span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-violet-50 text-violet-700 border border-violet-200">
+                                            Rutin: {{ ucfirst($ag->recurrence) }}
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border {{ $stBadge['bg'] }} {{ $stBadge['text'] }} {{ $stBadge['border'] }}">
+                                    {{ $stBadge['label'] }}
+                                </span>
+                            </div>
+
+                            <!-- Date & Time Box (Modern Visual Calendar) -->
+                            <div class="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between gap-3">
+                                <div class="space-y-0.5 min-w-0">
+                                    <div class="flex items-center gap-1.5 text-xs font-black text-slate-800">
+                                        <svg class="w-3.5 h-3.5 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        <span class="truncate">{{ $ag->start_date ? $ag->start_date->isoFormat('dddd, D MMMM Y') : 'Jadwal belum ditentukan' }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 pl-5">
+                                        <span>{{ $ag->start_time ? date('H:i', strtotime($ag->start_time)) : 'All Day' }} @if($ag->end_time) - {{ date('H:i', strtotime($ag->end_time)) }} WIB @endif</span>
+                                    </div>
+                                </div>
+
+                                <div class="shrink-0 text-right">
+                                    @if($isToday)
+                                        <span class="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-300 animate-pulse block">
+                                            Hari Ini!
+                                        </span>
+                                    @elseif($isTomorrow)
+                                        <span class="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200 block">
+                                            Besok
+                                        </span>
+                                    @elseif($isPast)
+                                        <span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-slate-100 text-slate-500 block">
+                                            Sudah Lewat
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 block">
+                                            Mendatang
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- Title & Description -->
+                            <div class="space-y-2">
+                                <h3 class="text-base sm:text-lg font-black text-slate-900 leading-snug group-hover:text-indigo-600 transition-colors">
+                                    {{ $ag->title }}
+                                </h3>
+
+                                @if($ag->description)
+                                    <p class="text-xs text-slate-600 leading-relaxed font-medium bg-slate-50/60 p-3 rounded-2xl border border-slate-100/80 line-clamp-2">
+                                        {{ $ag->description }}
+                                    </p>
+                                @endif
+                            </div>
+
+                            <!-- Location Info Section -->
+                            <div class="p-3 rounded-2xl border text-xs space-y-1 {{ $ag->location_type === 'online' ? 'bg-blue-50/40 border-blue-100 text-blue-900' : 'bg-emerald-50/40 border-emerald-100 text-emerald-900' }}">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-1.5 font-black text-[11px]">
+                                        @if($ag->location_type === 'online')
+                                            <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                            <span>Virtual Meeting Online</span>
+                                        @else
+                                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                            <span>Lokasi Fisik / Lapangan</span>
+                                        @endif
+                                    </div>
+                                    @if($ag->location_type === 'offline' && $ag->location_address)
+                                        <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($ag->location_address) }}" target="_blank" class="text-[10px] text-emerald-700 font-bold underline hover:text-emerald-900">
+                                            Buka Maps &rarr;
+                                        </a>
+                                    @endif
+                                </div>
+
+                                @if($ag->location_type === 'online' && $ag->meeting_url)
+                                    <div class="flex items-center justify-between gap-2 pt-0.5">
+                                        <a href="{{ $ag->meeting_url }}" target="_blank" class="text-[11px] font-bold text-blue-600 hover:text-blue-800 underline truncate block flex-1">
+                                            {{ $ag->meeting_url }}
+                                        </a>
+                                        <button type="button" @click="copyToClipboard('{{ addslashes($ag->meeting_url) }}', 'Tautan meeting disalin!')" 
+                                                class="p-1 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-100/50 transition-all shrink-0" title="Salin Tautan">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                        </button>
+                                    </div>
+                                @elseif($ag->location_address)
+                                    <p class="text-[11px] text-slate-600 font-medium truncate pt-0.5">
+                                        📍 {{ $ag->location_address }}
+                                    </p>
+                                @else
+                                    <p class="text-[11px] text-slate-400 italic pt-0.5">
+                                        Detail lokasi / tautan belum dicantumkan.
+                                    </p>
+                                @endif
+                            </div>
+
+                            <!-- Attendees & Notulensi Preview -->
+                            <div class="space-y-2 pt-1">
+                                @if(!empty($ag->attendee_ids))
+                                    <div class="flex items-center justify-between text-xs">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peserta ({{ count($ag->attendee_ids) }}):</span>
+                                            @if($isInvited)
+                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                    Anda Diundang
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <div class="flex items-center -space-x-1.5">
+                                            @foreach($attendeeList->take(3) as $att)
+                                                <div class="w-6 h-6 rounded-full bg-slate-800 text-white font-bold text-[9px] flex items-center justify-center ring-2 ring-white" title="{{ $att['name'] }}">
+                                                    {{ strtoupper(substr($att['name'], 0, 1)) }}
+                                                </div>
+                                            @endforeach
+                                            @if($attendeeList->count() > 3)
+                                                <div class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold text-[9px] flex items-center justify-center ring-2 ring-white">
+                                                    +{{ $attendeeList->count() - 3 }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+
+                                @if($ag->agenda_notes)
+                                    <div class="p-2.5 bg-emerald-50/50 border border-emerald-100 rounded-xl text-[11px] flex items-center gap-2 text-emerald-800 font-medium">
+                                        <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                        <span class="truncate">Notulensi kegiatan tersedia</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Card Action Buttons -->
+                        <div class="pt-4 border-t border-slate-100 space-y-2">
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="openDetail(@js($agendaData))" 
+                                        class="flex-1 py-2.5 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 font-black text-xs rounded-xl text-center transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer">
+                                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    <span>Lihat Rincian Agenda</span>
+                                </button>
+
+                                <a href="{{ $gcalUrl }}" target="_blank" 
+                                   class="p-2.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 text-slate-600 hover:text-indigo-600 rounded-xl transition-all shadow-sm"
+                                   title="Simpan ke Google Calendar">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </a>
+                            </div>
+
+                            @if($ag->location_type === 'online' && $ag->meeting_url)
+                                <a href="{{ $ag->meeting_url }}" target="_blank" 
+                                   class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl block text-center shadow-sm hover:shadow transition-all flex items-center justify-center gap-2">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                    <span>Buka Link Meeting &rarr;</span>
+                                </a>
+                            @endif
+                        </div>
+
+                    </div>
+                @empty
+                    <div class="col-span-full bg-white border border-dashed border-slate-200 rounded-3xl p-12 text-center space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <h4 class="text-sm font-black text-slate-800">Belum Ada Agenda Terdaftar</h4>
+                        <p class="text-xs text-slate-400 max-w-sm mx-auto">Semua jadwal rapat, workshop, dan agenda tim proyek ini akan tercantum di halaman ini.</p>
+                    </div>
+                @endforelse
+            </div>
+
+            <!-- MODAL DETAIL LENGKAP AGENDA (INTERAKTIF) -->
+            <div x-show="activeModalAgenda" x-cloak 
+                 class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0">
+
+                <div @click.away="closeDetail()" 
+                     class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto"
+                     x-transition:enter="transition ease-out duration-300 transform"
+                     x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+                     x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                     x-transition:leave="transition ease-in duration-200 transform"
+                     x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                     x-transition:leave-end="opacity-0 translate-y-4 scale-95">
+
+                    <!-- Header Modal -->
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider border"
+                                      :class="activeModalAgenda?.cat_bg + ' ' + activeModalAgenda?.cat_text + ' ' + activeModalAgenda?.cat_border"
+                                      x-text="activeModalAgenda?.category"></span>
+
+                                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border"
+                                      :class="activeModalAgenda?.status_bg + ' ' + activeModalAgenda?.status_text + ' ' + activeModalAgenda?.status_border"
+                                      x-text="activeModalAgenda?.status_label"></span>
+
+                                <template x-if="activeModalAgenda?.recurrence && activeModalAgenda?.recurrence !== 'once'">
+                                    <span class="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase bg-violet-50 text-violet-700 border border-violet-200">
+                                        Rutin: <span x-text="activeModalAgenda?.recurrence"></span>
+                                    </span>
+                                </template>
+                            </div>
+                            <h3 class="text-xl sm:text-2xl font-black text-slate-900 leading-snug pt-1" x-text="activeModalAgenda?.title"></h3>
+                        </div>
+
+                        <button type="button" @click="closeDetail()" 
+                                class="w-9 h-9 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center font-black text-lg transition-all shrink-0 cursor-pointer">
+                            &times;
+                        </button>
+                    </div>
+
+                    <!-- Jadwal & Waktu Box -->
+                    <div class="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600 block">Waktu Pelaksanaan (WIB)</span>
+                            <div class="text-sm font-black text-slate-900" x-text="activeModalAgenda?.date_formatted"></div>
+                            <div class="text-xs font-bold text-slate-600" x-text="activeModalAgenda?.time_formatted"></div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <a :href="activeModalAgenda?.gcal_url" target="_blank" 
+                               class="px-3 py-2 bg-white hover:bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm">
+                                <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <span>Google Calendar</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Lokasi / Akses Meeting -->
+                    <div class="p-4 rounded-2xl border text-xs space-y-2.5"
+                         :class="activeModalAgenda?.location_type === 'online' ? 'bg-blue-50/60 border-blue-100' : 'bg-emerald-50/60 border-emerald-100'">
+                        <div class="flex items-center gap-2 font-black"
+                             :class="activeModalAgenda?.location_type === 'online' ? 'text-blue-900' : 'text-emerald-900'">
+                            <span class="w-2.5 h-2.5 rounded-full" :class="activeModalAgenda?.location_type === 'online' ? 'bg-blue-500 animate-pulse' : 'bg-emerald-500'"></span>
+                            <span x-text="activeModalAgenda?.location_type === 'online' ? 'Platform Virtual Online' : 'Lokasi Fisik / Lapangan'"></span>
+                        </div>
+
+                        <!-- If Online -->
+                        <template x-if="activeModalAgenda?.location_type === 'online'">
+                            <div class="space-y-3">
+                                <template x-if="activeModalAgenda?.meeting_url">
+                                    <div class="space-y-2">
+                                        <div class="p-3 bg-white border border-blue-200/80 rounded-xl break-all font-mono text-[11px] text-blue-700 select-all" 
+                                             x-text="activeModalAgenda?.meeting_url"></div>
+                                        <div class="flex items-center gap-2">
+                                            <a :href="activeModalAgenda?.meeting_url" target="_blank" 
+                                               class="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl text-center shadow-sm transition-all flex items-center justify-center gap-1.5">
+                                                <span>Buka Link Meeting (Tab Baru) &rarr;</span>
+                                            </a>
+                                            <button type="button" @click="copyToClipboard(activeModalAgenda?.meeting_url, 'Tautan meeting disalin!')" 
+                                                    class="py-2 px-3 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
+                                                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                                <span>Salin Link</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template x-if="!activeModalAgenda?.meeting_url">
+                                    <p class="text-slate-500 italic">Tautan pertemuan daring belum dicantumkan oleh pengelola.</p>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- If Offline -->
+                        <template x-if="activeModalAgenda?.location_type !== 'online'">
+                            <div class="space-y-2">
+                                <div class="p-3 bg-white border border-emerald-200/80 rounded-xl text-slate-800 font-medium text-xs leading-relaxed" 
+                                     x-text="activeModalAgenda?.location_address || 'Alamat fisik belum dicantumkan.'"></div>
+                                <template x-if="activeModalAgenda?.location_address">
+                                    <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(activeModalAgenda?.location_address)" 
+                                       target="_blank" 
+                                       class="inline-flex items-center gap-1.5 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-sm transition-all">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                        <span>Buka Petunjuk Arah di Google Maps &rarr;</span>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Deskripsi Rincian Agenda -->
+                    <div class="space-y-2">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Deskripsi & Topik Bahasan</span>
+                        <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-xs text-slate-700 leading-relaxed font-medium whitespace-pre-line"
+                             x-text="activeModalAgenda?.description"></div>
+                    </div>
+
+                    <!-- Peserta / Tim yang Diundang -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                Anggota & Peserta Terdaftar (<span x-text="activeModalAgenda?.attendees?.length || 0"></span> Orang)
+                            </span>
+                            <template x-if="activeModalAgenda?.is_invited">
+                                <span class="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    ✓ Anda Terdaftar
+                                </span>
+                            </template>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-40 overflow-y-auto pr-1">
+                            <template x-for="user in activeModalAgenda?.attendees" :key="user.id">
+                                <div class="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center gap-2.5 text-xs">
+                                    <div class="w-7 h-7 rounded-full bg-slate-900 text-white font-black text-[10px] flex items-center justify-center shrink-0">
+                                        <span x-text="user.name.charAt(0).toUpperCase()"></span>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="font-black text-slate-800 truncate" x-text="user.name"></div>
+                                        <div class="text-[10px] text-slate-400 font-semibold truncate" x-text="user.position"></div>
+                                    </div>
+                                    <template x-if="user.is_me">
+                                        <span class="text-[9px] font-bold text-indigo-600 px-1.5 py-0.5 bg-indigo-50 rounded-md shrink-0">Anda</span>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Notulensi / Catatan Pasca Agenda (jika ada) -->
+                    <template x-if="activeModalAgenda?.agenda_notes">
+                        <div class="p-4 bg-emerald-50/60 border border-emerald-200/80 rounded-2xl space-y-2 text-xs">
+                            <div class="flex items-center gap-2 font-black text-emerald-900">
+                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                <span>Notulensi & Catatan Hasil Rapat / Evaluasi:</span>
+                            </div>
+                            <div class="text-slate-700 leading-relaxed font-medium whitespace-pre-line bg-white p-3.5 rounded-xl border border-emerald-100" 
+                                 x-text="activeModalAgenda?.agenda_notes"></div>
+                        </div>
+                    </template>
+
+                    <!-- Penyelenggara & Footer Actions -->
+                    <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="text-[11px] text-slate-400 font-semibold">
+                            Diselenggarakan oleh: <span class="text-slate-800 font-bold" x-text="activeModalAgenda?.creator_name"></span> (<span x-text="activeModalAgenda?.creator_position"></span>)
+                        </div>
+
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" @click="shareAgenda(activeModalAgenda)" 
+                                    class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                                <span>Bagikan Ringkasan</span>
+                            </button>
+
+                            <button type="button" @click="closeDetail()" 
+                                    class="py-2.5 px-5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl transition-all shadow-sm cursor-pointer">
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
         </div>
     @endif
 

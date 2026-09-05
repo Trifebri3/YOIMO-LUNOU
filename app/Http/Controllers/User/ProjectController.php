@@ -9,6 +9,7 @@ use App\Models\ProjectAiChat;
 use App\Models\ProjectExpense;
 use App\Models\ProjectTask;
 use App\Models\TaskProgressLog;
+use App\Models\User;
 use App\Services\AIService;
 use App\Services\GamificationService;
 use Illuminate\Http\JsonResponse;
@@ -28,7 +29,7 @@ class ProjectController extends Controller
         $project->load([
             'company',
             'creator',
-            'roadmaps',
+            'roadmaps.tasks.assignee',
             'agendas.creator',
             'repositoryDocuments.creator',
             'expenses.uploader',
@@ -97,6 +98,9 @@ class ProjectController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $agendaUserIds = $project->agendas->pluck('attendee_ids')->flatten()->filter()->unique();
+        $agendaAttendees = User::whereIn('id', $agendaUserIds)->get()->keyBy('id');
+
         return view('user.projects.show', compact(
             'project',
             'myTasks',
@@ -108,7 +112,8 @@ class ProjectController extends Controller
             'remainingBudget',
             'projectAiInsight',
             'projectAiChats',
-            'aiProgressLogs'
+            'aiProgressLogs',
+            'agendaAttendees'
         ));
     }
 

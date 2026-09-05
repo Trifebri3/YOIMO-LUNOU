@@ -12,7 +12,6 @@ class CompanyProfile extends Model
 
     protected $fillable = [
         'manager_id',
-        'demo_track_id',
         'company_name',
         'slug',
         'is_published',
@@ -34,16 +33,6 @@ class CompanyProfile extends Model
         'dynamic_sections' => 'array',
         'is_published' => 'boolean',
     ];
-
-    protected static function booted()
-    {
-        if (session()->has('demo_track_id')) {
-            $trackId = session()->get('demo_track_id');
-            static::addGlobalScope('demo_isolation', function ($builder) use ($trackId) {
-                $builder->where('demo_track_id', $trackId);
-            });
-        }
-    }
 
     protected static function boot()
     {

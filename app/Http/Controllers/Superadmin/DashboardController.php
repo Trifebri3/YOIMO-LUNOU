@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -14,11 +13,7 @@ class DashboardController extends Controller
 {
     public function index(): View
     {
-        $demoTracks = DB::table('demo_tracks')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('superadmin.dashboard', compact('demoTracks'));
+        return view('superadmin.dashboard');
     }
 
     public function notificationSettings(): View
@@ -40,21 +35,11 @@ class DashboardController extends Controller
             'default_target' => env('FONNTE_DEFAULT_TARGET', ''),
         ];
 
-        if (session()->has('demo_track_id')) {
-            $mailConfig['password'] = '••••••••';
-            $mailConfig['username'] = '••••••••';
-            $whatsappConfig['token'] = '••••••••';
-        }
-
         return view('superadmin.notification_settings', compact('mailConfig', 'whatsappConfig'));
     }
 
     public function updateNotificationSettings(Request $request)
     {
-        if (session()->has('demo_track_id')) {
-            return back()->with('error', 'Konfigurasi kredensial dinonaktifkan di akun demo untuk alasan keamanan.');
-        }
-
         $request->validate([
             'mail_host' => 'required|string',
             'mail_port' => 'required|string',
@@ -93,10 +78,6 @@ class DashboardController extends Controller
 
     public function testEmail(Request $request)
     {
-        if (session()->has('demo_track_id')) {
-            return back()->with('error', 'Fitur uji coba dinonaktifkan di akun demo.');
-        }
-
         $request->validate([
             'test_email_address' => 'required|email',
         ]);
@@ -115,10 +96,6 @@ class DashboardController extends Controller
 
     public function testWhatsapp(Request $request)
     {
-        if (session()->has('demo_track_id')) {
-            return back()->with('error', 'Fitur uji coba dinonaktifkan di akun demo.');
-        }
-
         $request->validate([
             'test_whatsapp_number' => 'required|string',
         ]);

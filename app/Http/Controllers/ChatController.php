@@ -38,9 +38,6 @@ class ChatController extends Controller
 
         // 1. Ambil list personal contacts (semua user kecuali diri sendiri)
         $contactsQuery = User::where('id', '!=', $userId);
-        if (session()->has('demo_track_id')) {
-            $contactsQuery->whereIn('email', ['management@gmail.com', 'user@gmail.com']);
-        }
 
         if ($showArchived) {
             $contactsQuery->whereIn('id', $archivedUserIds);
@@ -123,10 +120,6 @@ class ChatController extends Controller
      */
     public function send(Request $request): JsonResponse
     {
-        if (session()->has('demo_track_id')) {
-            return response()->json(['success' => false, 'error' => 'Fitur kirim chat dinonaktifkan di akun demo.'], 403);
-        }
-
         $request->validate([
             'message' => ['nullable', 'string', 'max:5000'],
             'recipient_id' => ['nullable', 'exists:users,id'],

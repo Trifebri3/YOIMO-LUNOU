@@ -13,7 +13,6 @@ class Project extends Model
     protected $fillable = [
         'company_profile_id',
         'created_by',
-        'demo_track_id',
         'name',
         'slug',
         'client_name',
@@ -69,16 +68,6 @@ class Project extends Model
         'deadline' => 'date',
         'is_archived' => 'boolean',
     ];
-
-    protected static function booted()
-    {
-        if (session()->has('demo_track_id')) {
-            $trackId = session()->get('demo_track_id');
-            static::addGlobalScope('demo_isolation', function ($builder) use ($trackId) {
-                $builder->where('demo_track_id', $trackId);
-            });
-        }
-    }
 
     protected static function boot()
     {
