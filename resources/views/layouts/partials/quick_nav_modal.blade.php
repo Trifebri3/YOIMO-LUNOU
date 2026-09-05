@@ -28,7 +28,7 @@
             @if(isset($navProjects) && $navProjects->count() > 0)
                 <div class="quick-nav-group" data-group="projects">
                     <div class="flex items-center justify-between px-3 py-1 text-[11px] font-black uppercase text-indigo-700 tracking-wider">
-                        <span>📁 Proyek Saya ({{ $navProjects->count() }})</span>
+                        <span class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 fill-current text-indigo-600 shrink-0" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg> Proyek Saya ({{ $navProjects->count() }})</span>
                         <span class="text-[10px] text-slate-400 font-semibold">Klik untuk buka lembar kerja</span>
                     </div>
                     <div class="space-y-1 mt-1">
@@ -65,7 +65,7 @@
             <!-- Section: Navigasi Menu Cepat -->
             <div class="quick-nav-group" data-group="menus">
                 <div class="px-3 py-1 text-[11px] font-black uppercase text-slate-400 tracking-wider">
-                    <span>🧭 Navigasi & Fitur Utama</span>
+                    <span class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 fill-current text-slate-400 shrink-0" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg> Navigasi & Fitur Utama</span>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-1">
                     <!-- Dashboard Pribadi -->
@@ -188,7 +188,7 @@
             @if(Auth::user()->isManagement() || Auth::user()->isSuperAdmin())
                 <div class="quick-nav-group pt-2 border-t border-slate-150" data-group="portal-switch">
                     <div class="px-3 py-1 text-[11px] font-black uppercase text-slate-400 tracking-wider">
-                        <span>🔄 Alihkan Mode Portal</span>
+                        <span class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 fill-current text-slate-400 shrink-0" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg> Alihkan Mode Portal</span>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
                         <a href="{{ route('management.dashboard') }}" 

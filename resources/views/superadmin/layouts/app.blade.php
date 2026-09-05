@@ -90,8 +90,12 @@
             const sidebar = document.getElementById('mobile-sidebar');
             const overlay = document.getElementById('sidebar-overlay');
             if (sidebar && overlay) {
+                const isOpening = sidebar.classList.contains('hidden');
                 sidebar.classList.toggle('hidden');
                 overlay.classList.toggle('hidden');
+                if (window.innerWidth < 1280) {
+                    document.body.classList.toggle('overflow-hidden', isOpening);
+                }
             }
         }
     </script>

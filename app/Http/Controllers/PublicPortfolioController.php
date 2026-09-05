@@ -11,11 +11,17 @@ use Illuminate\View\View;
 class PublicPortfolioController extends Controller
 {
     /**
-     * Tampilkan halaman portofolio publik pengguna
+     * Tampilkan halaman portofolio publik pengguna (mendukung slug nama dan ID)
      */
-    public function show(User $user): View
+    public function show(string $user): View
     {
-        // 1. Eager load relasi gamifikasi
+        $resolvedUser = User::where('slug', $user)
+            ->orWhere('id', $user)
+            ->firstOrFail();
+
+        $user = $resolvedUser;
+
+        // 1. Eager load relasi gamifikasi dan afiliasi perusahaan
         $user->load([
             'userPoint',
             'awards',

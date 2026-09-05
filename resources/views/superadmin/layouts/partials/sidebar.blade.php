@@ -1,5 +1,5 @@
-<aside id="mobile-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-100 flex flex-col justify-between h-screen shrink-0 font-sans hidden xl:flex xl:sticky xl:top-0">
-    <div class="p-6">
+<aside id="mobile-sidebar" class="fixed inset-y-0 left-0 z-50 w-72 sm:w-80 xl:w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between h-[100dvh] max-h-[100dvh] xl:h-screen shrink-0 font-sans hidden xl:flex xl:sticky xl:top-0 shadow-2xl xl:shadow-none overflow-hidden transition-all">
+    <div class="p-5 sm:p-6 flex-1 overflow-y-auto min-h-0 overscroll-contain" style="-webkit-overflow-scrolling: touch; touch-action: pan-y; overscroll-behavior-y: contain;">
         <!-- Logo Area -->
         <div class="flex items-center justify-between gap-3 mb-8">
             <div class="flex items-center gap-3">
@@ -100,7 +100,7 @@
     </div>
 
     <!-- Node Keamanan Footer Sidebar -->
-    <div class="p-6 border-t border-slate-100">
+    <div class="p-5 sm:p-6 border-t border-slate-100 shrink-0 bg-white z-10">
         <div class="flex items-center justify-between text-[11px] font-bold">
             <span class="text-slate-400 uppercase tracking-wider">Node Keamanan</span>
             <span class="text-emerald-600 flex items-center gap-1">

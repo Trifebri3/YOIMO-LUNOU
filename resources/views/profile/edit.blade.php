@@ -42,11 +42,11 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-3 z-10 shrink-0 w-full sm:w-auto">
-            <a href="{{ route('public.portfolio.show', Auth::id()) }}" target="_blank" class="px-5 py-3 bg-white hover:bg-slate-100 text-indigo-900 text-xs font-black rounded-xl transition shadow-lg flex items-center justify-center gap-2 w-full sm:w-auto">
+            <a href="{{ route('public.portfolio.show', Auth::user()->slug ?? Auth::id()) }}" target="_blank" class="px-5 py-3 bg-white hover:bg-slate-100 text-indigo-900 text-xs font-black rounded-xl transition shadow-lg flex items-center justify-center gap-2 w-full sm:w-auto">
                 <span>Lihat Portofolio</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
             </a>
-            <button type="button" onclick="navigator.clipboard.writeText('{{ route('public.portfolio.show', Auth::id()) }}'); alert('Tautan portofolio publik Anda berhasil disalin!');" class="px-4 py-3 bg-indigo-950/60 hover:bg-indigo-950 text-indigo-200 text-xs font-bold rounded-xl transition border border-indigo-400/30 flex items-center justify-center gap-2 w-full sm:w-auto">
+            <button type="button" onclick="navigator.clipboard.writeText('{{ route('public.portfolio.show', Auth::user()->slug ?? Auth::id()) }}'); alert('Tautan portofolio publik Anda berhasil disalin!');" class="px-4 py-3 bg-indigo-950/60 hover:bg-indigo-950 text-indigo-200 text-xs font-bold rounded-xl transition border border-indigo-400/30 flex items-center justify-center gap-2 w-full sm:w-auto">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                 <span>Salin Link</span>
             </button>

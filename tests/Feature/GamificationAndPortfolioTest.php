@@ -242,3 +242,25 @@ test('public portfolio page can be accessed by guests and shows user projects an
     $response->assertSee('Bagikan ke LinkedIn');
     $response->assertSee('WhatsApp');
 });
+
+test('public portfolio page can be accessed via slug name and displays YOTA FAMILY ecosystem branding', function () {
+    $user = User::factory()->create([
+        'name' => 'Tri Febriansah',
+        'position' => 'Chief Technology Officer',
+    ]);
+
+    expect($user->slug)->toBe('tri-febriansah');
+
+    // Access via slug
+    $response = $this->get('/u/tri-febriansah');
+    $response->assertStatus(200);
+    $response->assertSee('Tri Febriansah');
+    $response->assertSee('Chief Technology Officer');
+    $response->assertSee('EKOSISTEM UTAMA YOTA FAMILY');
+    $response->assertSee('PT YOTA INOVASI NUSANTARA');
+
+    // Access via numeric ID fallback
+    $fallbackResponse = $this->get('/u/'.$user->id);
+    $fallbackResponse->assertStatus(200);
+    $fallbackResponse->assertSee('Tri Febriansah');
+});

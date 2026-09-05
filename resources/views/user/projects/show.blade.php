@@ -670,8 +670,14 @@
                                         {{ $task->priority }}
                                     </span>
                                     @if($task->submission_timing_status)
-                                        <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase {{ $task->submission_timing_status === 'On Time' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800' }}">
-                                            {{ $task->submission_timing_status === 'On Time' ? '⚡ TEPAT WAKTU' : '⚠️ TERLAMBAT' }}
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase {{ $task->submission_timing_status === 'On Time' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800' }}">
+                                            @if($task->submission_timing_status === 'On Time')
+                                                <svg class="w-2.5 h-2.5 fill-current text-emerald-700 shrink-0" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+                                                <span>TEPAT WAKTU</span>
+                                            @else
+                                                <svg class="w-2.5 h-2.5 fill-current text-rose-700 shrink-0" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                                <span>TERLAMBAT</span>
+                                            @endif
                                         </span>
                                     @endif
                                 </div>

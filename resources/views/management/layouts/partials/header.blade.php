@@ -62,14 +62,16 @@
         <div class="hidden lg:flex items-center gap-1.5 border-r border-slate-200 pr-3">
             <a href="{{ route('management.dashboard') }}" 
                class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 {{ request()->routeIs('management.dashboard') ? 'bg-emerald-50 text-emerald-800' : 'text-slate-600 hover:bg-slate-100' }}">
-                <span>📊 Overview</span>
+                <svg class="w-3.5 h-3.5 fill-current text-emerald-600 shrink-0" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+                <span>Overview</span>
             </a>
 
             <!-- Mode Switcher to Member Portal -->
             <a href="{{ route('user.dashboard') }}" 
-               class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 rounded-xl text-xs font-black transition-all flex items-center gap-1 shadow-2xs"
+               class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-2xs"
                title="Beralih ke Ruang Kerja Anggota">
-                <span>👤 Ruang Anggota</span>
+                <svg class="w-3.5 h-3.5 fill-current text-indigo-600 shrink-0" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+                <span>Ruang Anggota</span>
             </a>
         </div>
 
@@ -120,10 +122,10 @@
 
                 <!-- Navigation Options -->
                 <div class="space-y-1 text-xs font-bold">
-                    <a href="{{ route('public.portfolio.show', Auth::id()) }}" target="_blank"
+                    <a href="{{ route('public.portfolio.show', Auth::user()->slug ?? Auth::id()) }}" target="_blank"
                        class="flex items-center justify-between px-3 py-2.5 rounded-xl bg-indigo-50/80 text-indigo-700 hover:bg-indigo-100 transition-colors">
                         <div class="flex items-center gap-2.5">
-                            <span class="text-sm">💼</span>
+                            <svg class="w-4 h-4 text-indigo-600 fill-current shrink-0" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"/><path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z"/></svg>
                             <span>Portofolio Publik Saya</span>
                         </div>
                         <span class="text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-200/80 text-indigo-800">Share</span>

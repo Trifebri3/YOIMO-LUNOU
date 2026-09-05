@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -13,6 +14,7 @@ class User extends Authenticatable
     protected $fillable = [
         'company_profile_id',
         'name',
+        'slug',
         'email',
         'password',
         'role',
@@ -22,6 +24,27 @@ class User extends Authenticatable
         'bio',
         'last_seen_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (User $user) {
+            if (empty($user->slug) && ! empty($user->name)) {
+                $baseSlug = Str::slug($user->name) ?: 'user-'.($user->id ?? uniqid());
+                $slug = $baseSlug;
+                $counter = 1;
+                while (static::where('slug', $slug)->where('id', '!=', $user->id ?? 0)->exists()) {
+                    $counter++;
+                    $slug = $baseSlug.'-'.$counter;
+                }
+                $user->slug = $slug;
+            }
+        });
+    }
+
+    public function getPortfolioUrlAttribute(): string
+    {
+        return route('public.portfolio.show', $this->slug ?: $this->id);
+    }
 
     protected $hidden = [
         'password',

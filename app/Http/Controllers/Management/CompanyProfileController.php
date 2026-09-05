@@ -127,8 +127,9 @@ class CompanyProfileController extends Controller
         $teamMembers = $company->allMembers();
         $memberIds = $teamMembers->pluck('id')->toArray();
 
-        // Ambil list semua user yang belum bergabung di company ini (dapat berasal dari company lain)
-        $availableUsers = User::whereNotIn('role', ['superadmin'])
+        // Ambil list semua user yang belum ter-embed di company manapun (unassigned)
+        $availableUsers = User::whereNotIn('role', ['superadmin', 'management'])
+            ->whereNull('company_profile_id')
             ->whereNotIn('id', $memberIds)
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'role']);
