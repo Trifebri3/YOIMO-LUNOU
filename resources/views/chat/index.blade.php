@@ -225,11 +225,15 @@
                         @if(!$isMe)
                             <!-- Sender Avatar -->
                             <div class="shrink-0">
-                                @if($msg->sender->avatar)
+                                @if($msg->sender && $msg->sender->avatar)
                                     <img src="{{ asset('storage/' . $msg->sender->avatar) }}" alt="Avatar" class="w-8 h-8 rounded-lg object-cover border border-slate-200">
-                                @else
+                                @elseif($msg->sender)
                                     <div class="w-8 h-8 rounded-lg bg-slate-900 text-white font-black text-[10px] flex items-center justify-center uppercase">
                                         {{ substr($msg->sender->name, 0, 2) }}
+                                    </div>
+                                @else
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center uppercase" title="Klien Portal">
+                                        {{ substr($msg->client_name ?? 'KL', 0, 2) }}
                                     </div>
                                 @endif
                             </div>
@@ -240,8 +244,39 @@
                              {{ $isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-100 text-slate-800 rounded-bl-none' }}">
                             
                             @if(!$isMe)
-                                <!-- Sender Name inside bubble -->
-                                <span class="block text-[11px] font-black uppercase tracking-wider text-indigo-600 mb-0.5">{{ $msg->sender->name }}</span>
+                                <!-- Sender Name & Badge inside bubble -->
+                                <div class="flex items-center gap-1.5 mb-0.5">
+                                    <span class="block text-[11px] font-black uppercase tracking-wider text-indigo-600">{{ $msg->sender ? $msg->sender->name : ($msg->client_name ?? 'Klien (Portal)') }}</span>
+                                    @if(!$msg->sender)
+                                        <span class="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[8px] font-black uppercase rounded">Klien Portal</span>
+                                    @endif
+                                </div>
+                            @endif
+
+                            @if($msg->message_type === 'kendala')
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider {{ $isMe ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-700 border border-rose-200' }}">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                        <span>Tercatat: Hambatan / Kendala</span>
+                                    </div>
+                                    <div id="chat-badge-status-{{ $msg->id }}">
+                                        @if($msg->is_resolved)
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[8px] font-black uppercase {{ $isMe ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800' }}">
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                                Terselesaikan
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[8px] font-black uppercase {{ $isMe ? 'bg-white/20 text-amber-200' : 'bg-amber-100 text-amber-800' }}">
+                                                Menunggu Solusi
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @elseif($msg->message_type === 'question')
+                                <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider {{ $isMe ? 'bg-sky-500 text-white' : 'bg-sky-100 text-sky-700 border border-sky-200' }}">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span>Tercatat: Pertanyaan / Diskusi Klien</span>
+                                </div>
                             @endif
 
                             @if($msg->message)
@@ -250,17 +285,33 @@
 
                             <!-- Attachment View inside bubble -->
                             @if($msg->attachment_file)
-                                <div class="p-3 rounded-xl border flex items-center gap-2.5 mt-1.5
-                                     {{ $isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-slate-50 border-slate-200 text-slate-700' }}">
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                                    <div class="flex-1 min-w-0">
-                                        <span class="block text-xs font-black truncate">{{ $msg->attachment_name ?? 'Attachment File' }}</span>
+                                @if($msg->is_image)
+                                    <div class="mt-2 rounded-xl overflow-hidden border {{ $isMe ? 'border-white/20' : 'border-slate-200' }}">
+                                        <a href="{{ asset('storage/' . $msg->attachment_file) }}" target="_blank" class="block group relative">
+                                            <img src="{{ asset('storage/' . $msg->attachment_file) }}" alt="{{ $msg->attachment_name }}" class="max-h-60 w-full object-cover rounded-xl transition-transform duration-200 group-hover:scale-[1.02]">
+                                            <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1.5">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                                <span>Lihat Screenshot</span>
+                                            </div>
+                                        </a>
+                                        <div class="p-2 flex items-center justify-between text-[10px] {{ $isMe ? 'bg-white/10 text-white' : 'bg-slate-50 text-slate-600' }}">
+                                            <span class="truncate max-w-[160px] font-medium">{{ $msg->attachment_name ?? 'Screenshot' }}</span>
+                                            <a href="{{ asset('storage/' . $msg->attachment_file) }}" download class="font-bold underline hover:opacity-80">Unduh</a>
+                                        </div>
                                     </div>
-                                    <a href="{{ asset('storage/' . $msg->attachment_file) }}" target="_blank" 
-                                       class="px-2.5 py-1 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black tracking-wider uppercase shrink-0 shadow-sm">
-                                        Unduh
-                                    </a>
-                                </div>
+                                @else
+                                    <div class="p-3 rounded-xl border flex items-center gap-2.5 mt-1.5
+                                         {{ $isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-slate-50 border-slate-200 text-slate-700' }}">
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                        <div class="flex-1 min-w-0">
+                                            <span class="block text-xs font-black truncate">{{ $msg->attachment_name ?? 'Attachment File' }}</span>
+                                        </div>
+                                        <a href="{{ asset('storage/' . $msg->attachment_file) }}" target="_blank" 
+                                           class="px-2.5 py-1 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black tracking-wider uppercase shrink-0 shadow-sm">
+                                            Unduh
+                                        </a>
+                                    </div>
+                                @endif
                             @endif
 
                             <!-- Task Card Reference inside bubble -->
@@ -291,6 +342,66 @@
                                             {{ $isMe ? 'bg-white text-indigo-750 hover:bg-slate-50' : 'bg-indigo-600 text-white hover:bg-indigo-700' }}">
                                         Buka Detail Tugas
                                     </a>
+                                </div>
+                            @endif
+
+                            <!-- Interactive Checklist & Resolution Box for Kendala in Chat Center -->
+                            @if($msg->message_type === 'kendala')
+                                <div id="chat-resolution-card-{{ $msg->id }}" class="mt-2.5 pt-2 border-t {{ $isMe ? 'border-white/20' : 'border-slate-100' }}">
+                                    @if(!$msg->is_resolved)
+                                        <div class="rounded-xl p-2.5 border {{ $isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-amber-50/90 border-amber-200/80 text-slate-800' }} space-y-2 text-left">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <div class="flex items-center gap-1.5 text-xs font-black {{ $isMe ? 'text-amber-200' : 'text-amber-800' }}">
+                                                    <svg class="w-3.5 h-3.5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    <span>Hambatan Belum Selesai</span>
+                                                </div>
+                                                <button type="button" onclick="toggleChatResolutionPrompt({{ $msg->id }})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shadow-2xs cursor-pointer">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                    <span>Tandai Selesai</span>
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Inline Note Box -->
+                                            <div id="chat-resolve-box-{{ $msg->id }}" class="hidden pt-2 border-t {{ $isMe ? 'border-white/20' : 'border-amber-200/60' }} space-y-2">
+                                                <label class="block text-[9px] font-black uppercase tracking-wider {{ $isMe ? 'text-white/80' : 'text-slate-600' }}">Catatan Solusi / Penyelesaian:</label>
+                                                <textarea id="chat-resolve-note-{{ $msg->id }}" rows="2" placeholder="Tuliskan solusi penyelesaian hambatan ini..." class="w-full p-2 text-xs bg-white text-slate-800 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"></textarea>
+                                                <div class="flex items-center justify-end gap-2">
+                                                    <button type="button" onclick="toggleChatResolutionPrompt({{ $msg->id }})" class="px-2 py-1 text-[9px] font-bold {{ $isMe ? 'text-white/80 hover:text-white' : 'text-slate-500 hover:text-slate-700' }} cursor-pointer">Batal</button>
+                                                    <button type="button" onclick="submitChatResolution({{ $msg->id }}, true)" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs cursor-pointer">
+                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                                        <span>Simpan Solusi</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="rounded-xl p-2.5 border {{ $isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-emerald-50/90 border-emerald-200/80 text-slate-800' }} space-y-1.5 text-left">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <div class="flex items-center gap-1.5 text-xs font-black {{ $isMe ? 'text-emerald-200' : 'text-emerald-800' }}">
+                                                    <svg class="w-3.5 h-3.5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                    <span>Hambatan Terselesaikan</span>
+                                                </div>
+                                                <button type="button" onclick="submitChatResolution({{ $msg->id }}, false)" class="px-2 py-0.5 text-[8px] font-bold {{ $isMe ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-rose-600 hover:bg-rose-50' }} rounded border border-transparent transition-all cursor-pointer" title="Buka kembali kendala jika masih butuh penanganan">
+                                                    Buka Kembali
+                                                </button>
+                                            </div>
+                                            <div class="text-[9px] {{ $isMe ? 'bg-white/10 text-white' : 'bg-white/80 text-emerald-950 border border-emerald-100' }} p-2 rounded-lg space-y-1">
+                                                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                                    <span class="font-bold">Diselesaikan oleh:</span>
+                                                    <span class="font-black">{{ $msg->resolver_name ?? 'Tim' }}</span>
+                                                    @if($msg->resolved_at)
+                                                        <span class="opacity-70 font-normal">({{ $msg->resolved_at->format('H:i') }})</span>
+                                                    @endif
+                                                </div>
+                                                @if($msg->resolution_note)
+                                                    <div class="pt-1 border-t {{ $isMe ? 'border-white/10' : 'border-emerald-100' }} mt-0.5">
+                                                        <span class="font-bold block text-[8px] uppercase tracking-wider {{ $isMe ? 'text-white/80' : 'text-emerald-800' }}">Catatan Solusi:</span>
+                                                        <p class="font-medium {{ $isMe ? 'text-white/90' : 'text-slate-700' }} italic leading-relaxed whitespace-pre-line">{{ $msg->resolution_note }}</p>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endif
                                 </div>
                             @endif
 
@@ -377,6 +488,19 @@
                                 title="Kaitkan Tugas / Task">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                         </button>
+
+                        @if($activeProject)
+                            <!-- Category Selector in Project Chat -->
+                            <div class="relative">
+                                <select name="message_type" id="chat-message-type-select" 
+                                        class="px-2.5 py-3 bg-slate-50 border border-slate-200 text-slate-700 rounded-2xl text-xs font-black focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all cursor-pointer shadow-xs"
+                                        title="Tercatat sebagai kategori apa">
+                                    <option value="chat">Diskusi</option>
+                                    <option value="kendala">Hambatan</option>
+                                    <option value="question">Pertanyaan</option>
+                                </select>
+                            </div>
+                        @endif
 
                         <!-- Main Message Input Text Field -->
                         <input type="text" name="message" id="chat-message-input" autocomplete="off"
@@ -555,7 +679,33 @@
                     if (data.messages && data.messages.length > 0) {
                         data.messages.forEach(msg => {
                             // Check if bubble already rendered to prevent duplicates
-                            if (document.querySelector(`[data-message-id="${msg.id}"]`)) return;
+                            const existing = document.querySelector(`[data-message-id="${msg.id}"]`);
+                            if (existing) {
+                                // Sync resolution state if changed
+                                if (msg.message_type === 'kendala') {
+                                    const isMe = (msg.sender_id === {{ Auth::id() }});
+                                    const card = document.getElementById(`chat-resolution-card-${msg.id}`);
+                                    if (card) {
+                                        const temp = document.createElement('div');
+                                        temp.innerHTML = buildChatResolutionCardHtml(msg, isMe);
+                                        card.replaceWith(temp.firstElementChild);
+                                    }
+                                    const badgeContainer = document.getElementById(`chat-badge-status-${msg.id}`);
+                                    if (badgeContainer) {
+                                        badgeContainer.innerHTML = msg.is_resolved ? `
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[8px] font-black uppercase ${isMe ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'}">
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                                Terselesaikan
+                                            </span>
+                                        ` : `
+                                            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[8px] font-black uppercase ${isMe ? 'bg-white/20 text-amber-200' : 'bg-amber-100 text-amber-800'}">
+                                                Menunggu Solusi
+                                            </span>
+                                        `;
+                                    }
+                                }
+                                return;
+                            }
 
                             appendMessageBubble(msg);
                             if (msg.id > lastMessageId) {
@@ -566,6 +716,144 @@
                     }
                 })
                 .catch(err => console.error("Error polling messages:", err));
+        }
+
+        // Resolution Checklist Handlers for Chat Center
+        function buildChatResolutionCardHtml(msg, isMe) {
+            if (msg.message_type !== 'kendala') return '';
+
+            if (!msg.is_resolved) {
+                return `
+                    <div id="chat-resolution-card-${msg.id}" class="mt-2.5 pt-2 border-t ${isMe ? 'border-white/20' : 'border-slate-100'}">
+                        <div class="rounded-xl p-2.5 border ${isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-amber-50/90 border-amber-200/80 text-slate-800'} space-y-2 text-left">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-1.5 text-xs font-black ${isMe ? 'text-amber-200' : 'text-amber-800'}">
+                                    <svg class="w-3.5 h-3.5 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span>Hambatan Belum Selesai</span>
+                                </div>
+                                <button type="button" onclick="toggleChatResolutionPrompt(${msg.id})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shadow-2xs cursor-pointer">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                    <span>Tandai Selesai</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Inline Note Box -->
+                            <div id="chat-resolve-box-${msg.id}" class="hidden pt-2 border-t ${isMe ? 'border-white/20' : 'border-amber-200/60'} space-y-2">
+                                <label class="block text-[9px] font-black uppercase tracking-wider ${isMe ? 'text-white/80' : 'text-slate-600'}">Catatan Solusi / Penyelesaian:</label>
+                                <textarea id="chat-resolve-note-${msg.id}" rows="2" placeholder="Tuliskan solusi penyelesaian hambatan ini..." class="w-full p-2 text-xs bg-white text-slate-800 border border-slate-200 rounded-lg font-medium focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"></textarea>
+                                <div class="flex items-center justify-end gap-2">
+                                    <button type="button" onclick="toggleChatResolutionPrompt(${msg.id})" class="px-2 py-1 text-[9px] font-bold ${isMe ? 'text-white/80 hover:text-white' : 'text-slate-500 hover:text-slate-700'} cursor-pointer">Batal</button>
+                                    <button type="button" onclick="submitChatResolution(${msg.id}, true)" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 shadow-2xs cursor-pointer">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                        <span>Simpan Solusi</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div id="chat-resolution-card-${msg.id}" class="mt-2.5 pt-2 border-t ${isMe ? 'border-white/20' : 'border-slate-100'}">
+                        <div class="rounded-xl p-2.5 border ${isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-emerald-50/90 border-emerald-200/80 text-slate-800'} space-y-1.5 text-left">
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-1.5 text-xs font-black ${isMe ? 'text-emerald-200' : 'text-emerald-800'}">
+                                    <svg class="w-3.5 h-3.5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span>Hambatan Terselesaikan</span>
+                                </div>
+                                <button type="button" onclick="submitChatResolution(${msg.id}, false)" class="px-2 py-0.5 text-[8px] font-bold ${isMe ? 'text-white/70 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-rose-600 hover:bg-rose-50'} rounded border border-transparent transition-all cursor-pointer" title="Buka kembali kendala jika masih butuh penanganan">
+                                    Buka Kembali
+                                </button>
+                            </div>
+                            <div class="text-[9px] ${isMe ? 'bg-white/10 text-white' : 'bg-white/80 text-emerald-950 border border-emerald-100'} p-2 rounded-lg space-y-1">
+                                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                    <span class="font-bold">Diselesaikan oleh:</span>
+                                    <span class="font-black">${msg.resolver_name || 'Tim'}</span>
+                                    ${msg.resolved_at ? `<span class="opacity-70 font-normal">(${msg.resolved_at})</span>` : ''}
+                                </div>
+                                ${msg.resolution_note ? `
+                                    <div class="pt-1 border-t ${isMe ? 'border-white/10' : 'border-emerald-100'} mt-0.5">
+                                        <span class="font-bold block text-[8px] uppercase tracking-wider ${isMe ? 'text-white/80' : 'text-emerald-800'}">Catatan Solusi:</span>
+                                        <p class="font-medium ${isMe ? 'text-white/90' : 'text-slate-700'} italic leading-relaxed whitespace-pre-line">${msg.resolution_note}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function toggleChatResolutionPrompt(id) {
+            const box = document.getElementById(`chat-resolve-box-${id}`);
+            if (box) {
+                box.classList.toggle('hidden');
+                if (!box.classList.contains('hidden')) {
+                    const textarea = document.getElementById(`chat-resolve-note-${id}`);
+                    if (textarea) textarea.focus();
+                }
+            }
+        }
+
+        function submitChatResolution(id, isResolved) {
+            const url = `/chat/messages/${id}/toggle-resolution`;
+            const noteEl = document.getElementById(`chat-resolve-note-${id}`);
+            const note = noteEl ? noteEl.value.trim() : '';
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    is_resolved: isResolved,
+                    resolution_note: note
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    const item = document.querySelector(`[data-message-id="${id}"]`);
+                    if (item) {
+                        const isMe = item.classList.contains('justify-end');
+                        const cardContainer = document.getElementById(`chat-resolution-card-${id}`);
+                        if (cardContainer) {
+                            const temp = document.createElement('div');
+                            temp.innerHTML = buildChatResolutionCardHtml({
+                                id: id,
+                                message_type: 'kendala',
+                                is_resolved: isResolved,
+                                resolver_name: data.data.resolver_name,
+                                resolved_at: data.data.resolved_at,
+                                resolution_note: data.data.resolution_note
+                            }, isMe);
+                            cardContainer.replaceWith(temp.firstElementChild);
+                        }
+
+                        const badgeContainer = document.getElementById(`chat-badge-status-${id}`);
+                        if (badgeContainer) {
+                            badgeContainer.innerHTML = isResolved ? `
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[8px] font-black uppercase ${isMe ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'}">
+                                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                    Terselesaikan
+                                </span>
+                            ` : `
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[8px] font-black uppercase ${isMe ? 'bg-white/20 text-amber-200' : 'bg-amber-100 text-amber-800'}">
+                                    Menunggu Solusi
+                                </span>
+                            `;
+                        }
+                    }
+                } else {
+                    alert('Gagal memperbarui status: ' + (data.error || 'Terjadi kesalahan'));
+                }
+            })
+            .catch(err => {
+                console.error('Error toggling resolution in chat:', err);
+                alert('Gagal menghubungi server.');
+            });
         }
 
         // AJAX Chat Message Form Submission Handler
@@ -633,7 +921,7 @@
                     <div class="shrink-0">
                         ${msg.sender_avatar 
                             ? `<img src="${msg.sender_avatar}" alt="Avatar" class="w-8 h-8 rounded-lg object-cover border border-slate-200">`
-                            : `<div class="w-8 h-8 rounded-lg bg-slate-900 text-white font-black text-[10px] flex items-center justify-center uppercase">${msg.sender_name.substring(0, 2)}</div>`
+                            : `<div class="w-8 h-8 rounded-lg ${msg.sender_id ? 'bg-slate-900' : 'bg-emerald-600'} text-white font-black text-[10px] flex items-center justify-center uppercase">${(msg.sender_name || 'KL').substring(0, 2)}</div>`
                         }
                     </div>
                 `;
@@ -643,19 +931,66 @@
                 <div class="max-w-[70%] rounded-2xl p-4 shadow-md space-y-1.5 transition-all
                      ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-100 text-slate-800 rounded-bl-none'}">
                     
-                    ${!isMe ? `<span class="block text-[11px] font-black uppercase tracking-wider text-indigo-600 mb-0.5">${msg.sender_name}</span>` : ''}
+                    ${!isMe ? `
+                        <div class="flex items-center gap-1.5 mb-0.5">
+                            <span class="block text-[11px] font-black uppercase tracking-wider text-indigo-600">${msg.sender_name || 'Klien'}</span>
+                            ${!msg.sender_id ? `<span class="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[8px] font-black uppercase rounded">Klien Portal</span>` : ''}
+                        </div>
+                    ` : ''}
+
+                    ${msg.message_type === 'kendala' ? `
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${isMe ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-700 border border-rose-200'}">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                <span>Tercatat: Hambatan / Kendala</span>
+                            </div>
+                            <div id="chat-badge-status-${msg.id}">
+                                ${msg.is_resolved ? `
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[8px] font-black uppercase ${isMe ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'}">
+                                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                        Terselesaikan
+                                    </span>
+                                ` : `
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[8px] font-black uppercase ${isMe ? 'bg-white/20 text-amber-200' : 'bg-amber-100 text-amber-800'}">
+                                        Menunggu Solusi
+                                    </span>
+                                `}
+                            </div>
+                        </div>
+                    ` : (msg.message_type === 'question' ? `
+                        <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${isMe ? 'bg-sky-500 text-white' : 'bg-sky-100 text-sky-700 border border-sky-200'}">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>Tercatat: Pertanyaan / Diskusi Klien</span>
+                        </div>
+                    ` : '')}
                     
                     ${msg.message ? `<p class="text-sm leading-relaxed break-words whitespace-pre-line font-semibold">${msg.message}</p>` : ''}
                     
-                    ${msg.attachment_url ? `
-                        <div class="p-3 rounded-xl border flex items-center gap-2.5 mt-1.5 ${isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-slate-50 border-slate-200 text-slate-700'}">
-                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                            <div class="flex-1 min-w-0">
-                                <span class="block text-xs font-black truncate">${msg.attachment_name || 'Attachment File'}</span>
+                    ${msg.attachment_url ? (
+                        msg.is_image ? `
+                            <div class="mt-2 rounded-xl overflow-hidden border ${isMe ? 'border-white/20' : 'border-slate-200'}">
+                                <a href="${msg.attachment_url}" target="_blank" class="block group relative">
+                                    <img src="${msg.attachment_url}" alt="${msg.attachment_name || 'Screenshot'}" class="max-h-60 w-full object-cover rounded-xl transition-transform duration-200 group-hover:scale-[1.02]">
+                                    <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1.5">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                        <span>Lihat Screenshot</span>
+                                    </div>
+                                </a>
+                                <div class="p-2 flex items-center justify-between text-[10px] ${isMe ? 'bg-white/10 text-white' : 'bg-slate-50 text-slate-600'}">
+                                    <span class="truncate max-w-[160px] font-medium">${msg.attachment_name || 'Screenshot'}</span>
+                                    <a href="${msg.attachment_url}" download class="font-bold underline hover:opacity-80">Unduh</a>
+                                </div>
                             </div>
-                            <a href="${msg.attachment_url}" target="_blank" class="px-2.5 py-1 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black tracking-wider uppercase shrink-0 shadow-sm">Unduh</a>
-                        </div>
-                    ` : ''}
+                        ` : `
+                            <div class="p-3 rounded-xl border flex items-center gap-2.5 mt-1.5 ${isMe ? 'bg-white/10 border-white/20 text-white' : 'bg-slate-50 border-slate-200 text-slate-700'}">
+                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                <div class="flex-1 min-w-0">
+                                    <span class="block text-xs font-black truncate">${msg.attachment_name || 'Attachment File'}</span>
+                                </div>
+                                <a href="${msg.attachment_url}" target="_blank" class="px-2.5 py-1 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black tracking-wider uppercase shrink-0 shadow-sm">Unduh</a>
+                            </div>
+                        `
+                    ) : ''}
 
                     ${msg.task ? `
                         <div class="p-3.5 rounded-2xl border-l-4 flex flex-col gap-2 shadow-sm my-1.5 text-left
@@ -671,6 +1006,8 @@
                             <a href="${msg.task.project_id ? (window.location.pathname.startsWith('/management') ? `/management/projects/${msg.task.project_id}/tasks` : `/user/projects/${msg.task.project_id}?tab=tasks`) : '#'}" class="mt-1 block text-center py-1.5 rounded-lg text-[9px] font-black tracking-wider uppercase shadow-xs transition-all ${isMe ? 'bg-white text-indigo-750 hover:bg-slate-50' : 'bg-indigo-600 text-white hover:bg-indigo-700'}">Buka Detail Tugas</a>
                         </div>
                     ` : ''}
+
+                    ${buildChatResolutionCardHtml(msg, isMe)}
                     
                     <div class="flex items-center justify-end gap-1 mt-1">
                         <span class="block text-[9px] ${isMe ? 'text-white/70' : 'text-slate-400'} font-bold">${msg.created_at}</span>
@@ -695,3 +1032,4 @@
 </script>
 @endpush
 @endsection
+

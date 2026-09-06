@@ -175,6 +175,20 @@
                 <img src="{{ asset('icon/11.png') }}" alt="LUNOU" class="w-4 h-4 object-contain">
                 <span>Riwayat LUNOU AI</span>
             </a>
+
+            <a href="{{ route('chat.index', ['project_id' => $project->id]) }}" 
+               class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 shrink-0">
+                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                <span>Chat Proyek Live</span>
+            </a>
+
+            @if($project->share_token)
+                <a href="{{ route('client.portal.show', $project->share_token) }}" target="_blank"
+                   class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 shrink-0">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    <span>Portal Klien</span>
+                </a>
+            @endif
         </div>
     </div>
 

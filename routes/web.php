@@ -74,6 +74,9 @@ Route::get('/task/share/{id}', [PublicTaskController::class, 'show'])->name('pub
 // Client Shared Portal Links
 Route::get('/shared/project/{token}', [ClientPortalController::class, 'show'])->name('client.portal.show');
 Route::post('/shared/project/{token}/ask', [ClientPortalController::class, 'submitQuestion'])->name('client.portal.ask');
+Route::post('/shared/project/{token}/messages', [ClientPortalController::class, 'sendMessage'])->name('client.portal.messages.send');
+Route::get('/shared/project/{token}/messages', [ClientPortalController::class, 'fetchMessages'])->name('client.portal.messages.fetch');
+Route::post('/shared/project/{token}/messages/{message}/toggle-resolution', [ClientPortalController::class, 'toggleResolution'])->name('client.portal.messages.toggle-resolution');
 
 // 1. Superadmin Area
 Route::middleware(['auth', 'verified', 'role:superadmin'])
@@ -190,6 +193,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
     Route::get('/chat/fetch', [ChatController::class, 'fetchMessages'])->name('chat.fetch');
     Route::post('/chat/toggle-archive', [ChatController::class, 'toggleArchive'])->name('chat.toggle-archive');
+    Route::post('/chat/messages/{message}/toggle-resolution', [ChatController::class, 'toggleResolution'])->name('chat.messages.toggle-resolution');
 
     // Floating Mascot AI Chatbot Companion
     Route::post('/chatbot/query', [ChatbotController::class, 'query'])->name('chatbot.query');

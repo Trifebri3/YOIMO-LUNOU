@@ -581,11 +581,19 @@
                     </div>
 
                     <div class="flex flex-wrap gap-2 pt-2">
+                        <a href="{{ route('chat.index', ['project_id' => $project->id]) }}" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                            <span>Buka Chat Proyek Live</span>
+                        </a>
+                        <a href="{{ route('client.portal.show', $project->share_token) }}" target="_blank" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                            <span>Buka Portal Klien</span>
+                        </a>
                         <form method="POST" action="{{ route('management.projects.share-token', $project->id) }}">
                             @csrf
                             <button type="submit" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer">
                                 Regenerasi Token
-                              </button>
+                            </button>
                         </form>
                         <form method="POST" action="{{ route('management.projects.disable-share', $project->id) }}">
                             @csrf

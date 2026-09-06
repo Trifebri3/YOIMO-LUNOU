@@ -122,10 +122,11 @@ class ChatController extends Controller
     {
         $request->validate([
             'message' => ['nullable', 'string', 'max:5000'],
+            'message_type' => ['nullable', 'string', 'in:chat,kendala,question'],
             'recipient_id' => ['nullable', 'exists:users,id'],
             'project_id' => ['nullable', 'exists:projects,id'],
             'task_id' => ['nullable', 'exists:project_tasks,id'],
-            'file' => ['nullable', 'file', 'max:10240'], // Max 10MB
+            'file' => ['nullable', 'file', 'max:20480'], // Max 20MB
         ]);
 
         if (empty($request->message) && ! $request->hasFile('file') && empty($request->task_id)) {
@@ -147,6 +148,7 @@ class ChatController extends Controller
             'project_id' => $request->project_id,
             'task_id' => $request->task_id,
             'message' => $request->message,
+            'message_type' => $request->message_type ?? 'chat',
             'attachment_file' => $attachmentPath,
             'attachment_name' => $attachmentName,
             'is_read' => false,
@@ -164,9 +166,16 @@ class ChatController extends Controller
                 'sender_id' => $msg->sender_id,
                 'sender_name' => Auth::user()->name,
                 'sender_avatar' => Auth::user()->avatar ? asset('storage/'.Auth::user()->avatar) : null,
+                'sender_role' => Auth::user()->role,
                 'message' => $msg->message,
+                'message_type' => $msg->message_type,
+                'is_resolved' => (bool) $msg->is_resolved,
+                'resolved_at' => $msg->resolved_at ? $msg->resolved_at->format('H:i') : null,
+                'resolver_name' => $msg->resolver_name,
+                'resolution_note' => $msg->resolution_note,
                 'attachment_url' => $msg->attachment_file ? asset('storage/'.$msg->attachment_file) : null,
                 'attachment_name' => $msg->attachment_name,
+                'is_image' => $msg->is_image,
                 'created_at' => $msg->created_at->format('H:i'),
                 'is_read' => (bool) $msg->is_read,
                 'task' => $msg->task ? [
@@ -217,11 +226,18 @@ class ChatController extends Controller
             return [
                 'id' => $msg->id,
                 'sender_id' => $msg->sender_id,
-                'sender_name' => $msg->sender->name,
-                'sender_avatar' => $msg->sender->avatar ? asset('storage/'.$msg->sender->avatar) : null,
+                'sender_name' => $msg->sender ? $msg->sender->name : ($msg->client_name ?? 'Klien (Portal)'),
+                'sender_avatar' => ($msg->sender && $msg->sender->avatar) ? asset('storage/'.$msg->sender->avatar) : null,
+                'sender_role' => $msg->sender ? $msg->sender->role : 'Klien (Portal)',
                 'message' => $msg->message,
+                'message_type' => $msg->message_type ?? 'chat',
+                'is_resolved' => (bool) $msg->is_resolved,
+                'resolved_at' => $msg->resolved_at ? $msg->resolved_at->format('H:i') : null,
+                'resolver_name' => $msg->resolver_name,
+                'resolution_note' => $msg->resolution_note,
                 'attachment_url' => $msg->attachment_file ? asset('storage/'.$msg->attachment_file) : null,
                 'attachment_name' => $msg->attachment_name,
+                'is_image' => $msg->is_image,
                 'created_at' => $msg->created_at->format('H:i'),
                 'is_read' => (bool) $msg->is_read,
                 'task' => $msg->task ? [
@@ -235,6 +251,39 @@ class ChatController extends Controller
         });
 
         return response()->json(['messages' => $formatted]);
+    }
+
+    /**
+     * Toggle Status Penyelesaian Hambatan / Kendala dari WhatsApp Chat Center
+     */
+    public function toggleResolution(Request $request, ProjectMessage $message): JsonResponse
+    {
+        $request->validate([
+            'is_resolved' => ['required', 'boolean'],
+            'resolution_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $isResolved = $request->boolean('is_resolved');
+
+        $message->update([
+            'is_resolved' => $isResolved,
+            'resolved_at' => $isResolved ? now() : null,
+            'resolved_by' => $isResolved ? Auth::id() : null,
+            'resolver_name' => $isResolved ? Auth::user()->name : null,
+            'resolution_note' => $isResolved ? trim($request->resolution_note) : null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $isResolved ? 'Hambatan berhasil ditandai sebagai terselesaikan.' : 'Hambatan dibuka kembali.',
+            'data' => [
+                'id' => $message->id,
+                'is_resolved' => (bool) $message->is_resolved,
+                'resolved_at' => $message->resolved_at ? $message->resolved_at->format('H:i') : null,
+                'resolver_name' => $message->resolver_name,
+                'resolution_note' => $message->resolution_note,
+            ],
+        ]);
     }
 
     /**

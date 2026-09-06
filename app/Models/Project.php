@@ -11,6 +11,7 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
+        'share_token',
         'company_profile_id',
         'created_by',
         'name',
@@ -117,6 +118,11 @@ class Project extends Model
     public function activityLogs()
     {
         return $this->hasMany(ProjectActivityLog::class, 'project_id')->latest();
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(ProjectMessage::class, 'project_id')->orderBy('created_at', 'asc');
     }
 
     public function recalculateProgressAndStage()
