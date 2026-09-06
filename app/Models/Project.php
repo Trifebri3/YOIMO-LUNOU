@@ -125,6 +125,11 @@ class Project extends Model
         return $this->hasMany(ProjectMessage::class, 'project_id')->orderBy('created_at', 'asc');
     }
 
+    public function assetRequirements()
+    {
+        return $this->hasMany(ProjectAssetRequirement::class, 'project_id')->orderBy('sort_order', 'asc')->orderBy('id', 'asc');
+    }
+
     public function recalculateProgressAndStage()
     {
         $totalTasks = $this->tasks()->count();

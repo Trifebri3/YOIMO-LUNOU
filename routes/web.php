@@ -78,6 +78,12 @@ Route::post('/shared/project/{token}/messages', [ClientPortalController::class, 
 Route::get('/shared/project/{token}/messages', [ClientPortalController::class, 'fetchMessages'])->name('client.portal.messages.fetch');
 Route::post('/shared/project/{token}/messages/{message}/toggle-resolution', [ClientPortalController::class, 'toggleResolution'])->name('client.portal.messages.toggle-resolution');
 
+// Client Asset Intake Routes (Customizable & Interactive)
+Route::post('/shared/project/{token}/assets/{asset}/submit', [ClientPortalController::class, 'submitAssetRequirement'])->name('client.portal.assets.submit');
+Route::post('/shared/project/{token}/assets', [ClientPortalController::class, 'storeAssetRequirement'])->name('client.portal.assets.store');
+Route::delete('/shared/project/{token}/assets/{asset}', [ClientPortalController::class, 'deleteAssetRequirement'])->name('client.portal.assets.delete');
+Route::post('/shared/project/{token}/assets/{asset}/toggle-approval', [ClientPortalController::class, 'toggleAssetApproval'])->name('client.portal.assets.toggle-approval');
+
 // 1. Superadmin Area
 Route::middleware(['auth', 'verified', 'role:superadmin'])
     ->prefix('superadmin')

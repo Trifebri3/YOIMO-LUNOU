@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\ProjectAssetRequirement;
 use App\Models\ProjectMessage;
 use App\Services\AIService;
 use Carbon\Carbon;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ClientPortalController extends Controller
 {
@@ -49,12 +51,55 @@ class ClientPortalController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // 6. Get AI Executive Project Report (Cached for 1 hour)
+        // 6. Get Project Asset Requirements (Formulir Pengumpulan Aset & Berkas)
+        $assetRequirements = $project->assetRequirements()->orderBy('sort_order')->orderBy('id')->get();
+        if ($assetRequirements->isEmpty()) {
+            $defaultRequirements = [
+                [
+                    'title' => 'Logo Perusahaan / Vektor Asli',
+                    'description' => 'File logo berformat AI, EPS, SVG, atau PNG resolusi tinggi transparan.',
+                    'category' => 'Branding',
+                    'is_mandatory' => true,
+                    'sort_order' => 1,
+                ],
+                [
+                    'title' => 'Pedoman Visual & Brand Guideline',
+                    'description' => 'Dokumen PDF atau file panduan warna korporat (hex codes) dan font resmi jika ada.',
+                    'category' => 'Branding',
+                    'is_mandatory' => false,
+                    'sort_order' => 2,
+                ],
+                [
+                    'title' => 'Materi Konten Teks & Gambar Produk',
+                    'description' => 'Folder Google Drive, dokumen draft teks halaman (Tentang Kami, Layanan), atau katalog produk.',
+                    'category' => 'Konten',
+                    'is_mandatory' => true,
+                    'sort_order' => 3,
+                ],
+                [
+                    'title' => 'Akses Akun Domain & Web Hosting / Server',
+                    'description' => 'Detail login cPanel, Cloudflare, Namecheap, atau penyedia hosting untuk deployment.',
+                    'category' => 'Teknis',
+                    'is_mandatory' => false,
+                    'sort_order' => 4,
+                ],
+            ];
+            foreach ($defaultRequirements as $item) {
+                $project->assetRequirements()->create($item);
+            }
+            $assetRequirements = $project->assetRequirements()->orderBy('sort_order')->orderBy('id')->get();
+        }
+
+        $totalAssets = $assetRequirements->count();
+        $submittedAssets = $assetRequirements->whereIn('status', ['submitted', 'approved'])->count();
+        $assetProgress = $totalAssets > 0 ? round(($submittedAssets / $totalAssets) * 100) : 0;
+
+        // 7. Get AI Executive Project Report (Cached for 1 hour)
         $aiReport = Cache::remember('client_project_report_'.$project->id, 3600, function () use ($project, $roadmaps, $tasks) {
             return $this->generateProjectAiReport($project, $roadmaps, $tasks);
         });
 
-        return view('client.portal', compact('project', 'roadmaps', 'tasks', 'progress', 'questions', 'messages', 'aiReport'));
+        return view('client.portal', compact('project', 'roadmaps', 'tasks', 'progress', 'questions', 'messages', 'aiReport', 'assetRequirements', 'totalAssets', 'submittedAssets', 'assetProgress'));
     }
 
     /**
@@ -306,5 +351,221 @@ ATURAN OUTPUT:
         } catch (\Exception $e) {
             return '<p>Laporan kemajuan proyek saat ini sedang dalam proses penyusunan.</p>';
         }
+    }
+
+    /**
+     * Submit Asset / Berkas dari Klien
+     */
+    public function submitAssetRequirement(Request $request, $token, ProjectAssetRequirement $asset)
+    {
+        $project = Project::where('share_token', $token)->firstOrFail();
+
+        if ($asset->project_id !== $project->id) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Permintaan aset tidak ditemukan.'], 404);
+            }
+
+            return back()->with('error', 'Permintaan aset tidak ditemukan.');
+        }
+
+        $request->validate([
+            'client_name' => [Auth::check() ? 'nullable' : 'required', 'string', 'max:100'],
+            'external_url' => ['nullable', 'url', 'max:1000'],
+            'client_notes' => ['nullable', 'string', 'max:3000'],
+            'file' => ['nullable', 'file', 'max:51200'], // max 50MB
+        ]);
+
+        if (! $request->hasFile('file') && empty($request->external_url) && empty($request->client_notes)) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Harap unggah file, masukkan link, atau tulis catatan berkas.'], 422);
+            }
+
+            return back()->with('error', 'Harap unggah file, masukkan link, atau tulis catatan berkas.');
+        }
+
+        $clientName = Auth::check() ? Auth::user()->name : trim($request->client_name);
+
+        $updateData = [
+            'status' => 'submitted',
+            'submitted_by_name' => $clientName,
+            'submitted_at' => Carbon::now(),
+        ];
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $updateData['file_path'] = $file->store('project_assets', 'public');
+            $updateData['file_name'] = $file->getClientOriginalName();
+            $updateData['file_size'] = $file->getSize();
+        }
+
+        if ($request->filled('external_url')) {
+            $updateData['external_url'] = trim($request->external_url);
+        }
+
+        if ($request->filled('client_notes')) {
+            $updateData['client_notes'] = trim($request->client_notes);
+        }
+
+        $asset->update($updateData);
+
+        // Kirim notifikasi sinkron ke obrolan proyek
+        $msgContent = "📎 [Pengumpulan Aset] {$clientName} mengunggah berkas untuk: *{$asset->title}*";
+        if ($asset->external_url) {
+            $msgContent .= "\nTautan: {$asset->external_url}";
+        }
+        if ($asset->client_notes) {
+            $msgContent .= "\nCatatan: {$asset->client_notes}";
+        }
+
+        ProjectMessage::create([
+            'project_id' => $project->id,
+            'sender_id' => Auth::id(),
+            'client_name' => Auth::check() ? null : $clientName,
+            'message' => $msgContent,
+            'message_type' => 'chat',
+            'attachment_file' => $asset->file_path,
+            'attachment_name' => $asset->file_name,
+            'is_read' => false,
+        ]);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            $totalAssets = $project->assetRequirements()->count();
+            $submittedAssets = $project->assetRequirements()->whereIn('status', ['submitted', 'approved'])->count();
+            $progress = $totalAssets > 0 ? round(($submittedAssets / $totalAssets) * 100) : 0;
+
+            return response()->json([
+                'success' => true,
+                'message' => "Aset '{$asset->title}' berhasil dikirimkan!",
+                'asset' => $asset->fresh(),
+                'metrics' => [
+                    'total' => $totalAssets,
+                    'submitted' => $submittedAssets,
+                    'progress' => $progress,
+                ],
+            ]);
+        }
+
+        return back()->with('success', "Aset '{$asset->title}' berhasil dikirimkan!");
+    }
+
+    /**
+     * Tambah Permintaan Aset Baru (Bisa disesuaikan per kebutuhan proyek)
+     */
+    public function storeAssetRequirement(Request $request, $token)
+    {
+        $project = Project::where('share_token', $token)->firstOrFail();
+
+        $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:1000'],
+            'category' => ['nullable', 'string', 'max:100'],
+            'is_mandatory' => ['nullable', 'boolean'],
+        ]);
+
+        $newAsset = $project->assetRequirements()->create([
+            'title' => trim($request->title),
+            'description' => trim($request->description),
+            'category' => trim($request->category) ?: 'Umum',
+            'is_mandatory' => $request->boolean('is_mandatory'),
+            'status' => 'pending',
+            'sort_order' => ($project->assetRequirements()->max('sort_order') ?? 0) + 1,
+            'created_by' => Auth::id(),
+        ]);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            $totalAssets = $project->assetRequirements()->count();
+            $submittedAssets = $project->assetRequirements()->whereIn('status', ['submitted', 'approved'])->count();
+            $progress = $totalAssets > 0 ? round(($submittedAssets / $totalAssets) * 100) : 0;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Permintaan aset baru berhasil ditambahkan.',
+                'asset' => $newAsset,
+                'metrics' => [
+                    'total' => $totalAssets,
+                    'submitted' => $submittedAssets,
+                    'progress' => $progress,
+                ],
+            ]);
+        }
+
+        return back()->with('success', 'Permintaan aset baru berhasil ditambahkan.');
+    }
+
+    /**
+     * Hapus Permintaan Aset
+     */
+    public function deleteAssetRequirement(Request $request, $token, ProjectAssetRequirement $asset)
+    {
+        $project = Project::where('share_token', $token)->firstOrFail();
+
+        if ($asset->project_id !== $project->id) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Aset tidak ditemukan.'], 404);
+            }
+
+            return back()->with('error', 'Aset tidak ditemukan.');
+        }
+
+        $title = $asset->title;
+        if ($asset->file_path && Storage::disk('public')->exists($asset->file_path)) {
+            Storage::disk('public')->delete($asset->file_path);
+        }
+        $asset->delete();
+
+        if ($request->expectsJson() || $request->ajax()) {
+            $totalAssets = $project->assetRequirements()->count();
+            $submittedAssets = $project->assetRequirements()->whereIn('status', ['submitted', 'approved'])->count();
+            $progress = $totalAssets > 0 ? round(($submittedAssets / $totalAssets) * 100) : 0;
+
+            return response()->json([
+                'success' => true,
+                'message' => "Permintaan aset '{$title}' telah dihapus.",
+                'metrics' => [
+                    'total' => $totalAssets,
+                    'submitted' => $submittedAssets,
+                    'progress' => $progress,
+                ],
+            ]);
+        }
+
+        return back()->with('success', "Permintaan aset '{$title}' telah dihapus.");
+    }
+
+    /**
+     * Toggle Approval Aset oleh Tim / Klien
+     */
+    public function toggleAssetApproval(Request $request, $token, ProjectAssetRequirement $asset)
+    {
+        $project = Project::where('share_token', $token)->firstOrFail();
+
+        if ($asset->project_id !== $project->id) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => 'Aset tidak ditemukan.'], 404);
+            }
+
+            return back()->with('error', 'Aset tidak ditemukan.');
+        }
+
+        $isCurrentlyApproved = ($asset->status === 'approved');
+        $newStatus = $isCurrentlyApproved
+            ? ($asset->file_path || $asset->external_url || $asset->client_notes ? 'submitted' : 'pending')
+            : 'approved';
+
+        $asset->update([
+            'status' => $newStatus,
+            'reviewed_by' => $newStatus === 'approved' ? Auth::id() : null,
+            'reviewed_at' => $newStatus === 'approved' ? Carbon::now() : null,
+        ]);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $newStatus === 'approved' ? 'Aset disetujui!' : 'Status persetujuan dibatalkan.',
+                'asset' => $asset->fresh(),
+            ]);
+        }
+
+        return back()->with('success', $newStatus === 'approved' ? 'Aset disetujui!' : 'Status persetujuan dibatalkan.');
     }
 }
