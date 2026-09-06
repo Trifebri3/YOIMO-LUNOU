@@ -71,6 +71,17 @@ Route::get('/award/share/{token}', [PublicAwardController::class, 'show'])->name
 // Public Task Completion Share Link
 Route::get('/task/share/{id}', [PublicTaskController::class, 'show'])->name('public.task.show');
 
+// Session Heartbeat & CSRF Keep-Alive (Prevents session expiry & eliminates 419 Page Expired in PWA)
+Route::get('/ping', function () {
+    return response()->json([
+        'status' => 'ok',
+        'csrf_token' => csrf_token(),
+        'authenticated' => Auth::check(),
+        'user' => Auth::user()?->only(['id', 'name', 'role']),
+        'timestamp' => now()->timestamp,
+    ]);
+})->name('ping');
+
 // Client Shared Portal Links
 Route::get('/shared/project/{token}', [ClientPortalController::class, 'show'])->name('client.portal.show');
 Route::post('/shared/project/{token}/ask', [ClientPortalController::class, 'submitQuestion'])->name('client.portal.ask');

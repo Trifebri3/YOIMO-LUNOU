@@ -55,15 +55,7 @@
             </div>
         </div>
 
-        <!-- PWA Service Worker Registration -->
-        <script>
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/sw.js')
-                        .then((reg) => console.log('Yoimo PWA Service Worker registered:', reg.scope))
-                        .catch((err) => console.log('Yoimo PWA Service Worker registration error:', err));
-                });
-            }
-        </script>
+        <!-- PWA Engine & Keep-Alive -->
+        @include('layouts.partials.pwa_support')
     </body>
 </html>

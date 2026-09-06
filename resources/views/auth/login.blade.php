@@ -222,7 +222,7 @@
 
                     <!-- Remember Me -->
                     <div class="flex items-center">
-                        <input id="remember_me" type="checkbox" name="remember"
+                        <input id="remember_me" type="checkbox" name="remember" checked
                                class="rounded border-slate-200 text-emerald-600 focus:ring-emerald-500/20 cursor-pointer">
                         <label for="remember_me" class="ml-2 text-xs font-bold text-slate-600 font-sans cursor-pointer">Ingat Saya</label>
                     </div>
@@ -261,14 +261,7 @@
             }
         }
 
-        // PWA Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((reg) => console.log('Yoimo PWA Service Worker registered:', reg.scope))
-                    .catch((err) => console.log('Yoimo PWA Service Worker registration error:', err));
-            });
-        }
-    </script>
+    <!-- PWA Engine & Keep-Alive -->
+    @include('layouts.partials.pwa_support')
 </body>
 </html>

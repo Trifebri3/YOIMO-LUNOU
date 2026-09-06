@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class ClientPortalController extends Controller
@@ -52,42 +53,45 @@ class ClientPortalController extends Controller
             ->get();
 
         // 6. Get Project Asset Requirements (Formulir Pengumpulan Aset & Berkas)
-        $assetRequirements = $project->assetRequirements()->orderBy('sort_order')->orderBy('id')->get();
-        if ($assetRequirements->isEmpty()) {
-            $defaultRequirements = [
-                [
-                    'title' => 'Logo Perusahaan / Vektor Asli',
-                    'description' => 'File logo berformat AI, EPS, SVG, atau PNG resolusi tinggi transparan.',
-                    'category' => 'Branding',
-                    'is_mandatory' => true,
-                    'sort_order' => 1,
-                ],
-                [
-                    'title' => 'Pedoman Visual & Brand Guideline',
-                    'description' => 'Dokumen PDF atau file panduan warna korporat (hex codes) dan font resmi jika ada.',
-                    'category' => 'Branding',
-                    'is_mandatory' => false,
-                    'sort_order' => 2,
-                ],
-                [
-                    'title' => 'Materi Konten Teks & Gambar Produk',
-                    'description' => 'Folder Google Drive, dokumen draft teks halaman (Tentang Kami, Layanan), atau katalog produk.',
-                    'category' => 'Konten',
-                    'is_mandatory' => true,
-                    'sort_order' => 3,
-                ],
-                [
-                    'title' => 'Akses Akun Domain & Web Hosting / Server',
-                    'description' => 'Detail login cPanel, Cloudflare, Namecheap, atau penyedia hosting untuk deployment.',
-                    'category' => 'Teknis',
-                    'is_mandatory' => false,
-                    'sort_order' => 4,
-                ],
-            ];
-            foreach ($defaultRequirements as $item) {
-                $project->assetRequirements()->create($item);
-            }
+        $assetRequirements = collect();
+        if (Schema::hasTable('project_asset_requirements')) {
             $assetRequirements = $project->assetRequirements()->orderBy('sort_order')->orderBy('id')->get();
+            if ($assetRequirements->isEmpty()) {
+                $defaultRequirements = [
+                    [
+                        'title' => 'Logo Perusahaan / Vektor Asli',
+                        'description' => 'File logo berformat AI, EPS, SVG, atau PNG resolusi tinggi transparan.',
+                        'category' => 'Branding',
+                        'is_mandatory' => true,
+                        'sort_order' => 1,
+                    ],
+                    [
+                        'title' => 'Pedoman Visual & Brand Guideline',
+                        'description' => 'Dokumen PDF atau file panduan warna korporat (hex codes) dan font resmi jika ada.',
+                        'category' => 'Branding',
+                        'is_mandatory' => false,
+                        'sort_order' => 2,
+                    ],
+                    [
+                        'title' => 'Materi Konten Teks & Gambar Produk',
+                        'description' => 'Folder Google Drive, dokumen draft teks halaman (Tentang Kami, Layanan), atau katalog produk.',
+                        'category' => 'Konten',
+                        'is_mandatory' => true,
+                        'sort_order' => 3,
+                    ],
+                    [
+                        'title' => 'Akses Akun Domain & Web Hosting / Server',
+                        'description' => 'Detail login cPanel, Cloudflare, Namecheap, atau penyedia hosting untuk deployment.',
+                        'category' => 'Teknis',
+                        'is_mandatory' => false,
+                        'sort_order' => 4,
+                    ],
+                ];
+                foreach ($defaultRequirements as $item) {
+                    $project->assetRequirements()->create($item);
+                }
+                $assetRequirements = $project->assetRequirements()->orderBy('sort_order')->orderBy('id')->get();
+            }
         }
 
         $totalAssets = $assetRequirements->count();

@@ -54,16 +54,11 @@
     <!-- Mobile & iPad Bottom Navigation Bar (xl:hidden) -->
     @include('layouts.partials.mobile_bottom_nav')
 
-    <!-- Toggling and PWA Scripts -->
+    <!-- PWA Engine & Keep-Alive -->
+    @include('layouts.partials.pwa_support')
+
+    <!-- Toggling Scripts -->
     <script>
-        // PWA Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((reg) => console.log('Service worker registered.', reg))
-                    .catch((err) => console.log('Service worker registration failed.', err));
-            });
-        }
 
         // Mobile Sidebar Drawer Toggle
         function toggleSidebar() {

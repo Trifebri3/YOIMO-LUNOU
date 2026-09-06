@@ -3,7 +3,7 @@
  * Powered by LUNOU
  */
 
-const CACHE_NAME = 'yoimo-lunou-pwa-v2';
+const CACHE_NAME = 'yoimo-lunou-pwa-v3';
 
 const STATIC_PRECACHE = [
   '/offline.html',
@@ -26,7 +26,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: Clean up older caches (e.g. yotayoti-cache-v1)
+// Activate: Clean up older caches (e.g. yotayoti-cache-v1, yoimo-lunou-pwa-v2)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -58,8 +58,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Bypass authentication & session mutation endpoints completely
-  const bypassPaths = ['/logout', '/login', '/register', '/password', '/demo-login', '/sanctum'];
+  // 3. Bypass authentication, ping, & session mutation endpoints completely (always live network)
+  const bypassPaths = ['/logout', '/login', '/register', '/password', '/demo-login', '/sanctum', '/ping', '/api'];
   if (bypassPaths.some((p) => url.pathname.startsWith(p))) {
     return;
   }

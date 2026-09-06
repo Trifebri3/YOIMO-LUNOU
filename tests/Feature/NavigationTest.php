@@ -91,9 +91,10 @@ test('pwa manifest, service worker, and lunou icons are valid and properly confi
 
     // 2. Service Worker file verification (Network-First & bypass logout)
     $swContent = file_get_contents(public_path('sw.js'));
-    expect($swContent)->toContain('yoimo-lunou-pwa-v2');
+    expect($swContent)->toContain('yoimo-lunou-pwa-v3');
     expect($swContent)->toContain('offline.html');
     expect($swContent)->toContain("'/logout'");
+    expect($swContent)->toContain("'/ping'");
     expect($swContent)->not->toContain("  '/',");
 
     // 3. Offline page verification
@@ -106,4 +107,28 @@ test('pwa manifest, service worker, and lunou icons are valid and properly confi
     expect(file_exists(public_path('icons/icon-512x512.png')))->toBeTrue();
     expect(file_exists(public_path('icons/maskable-icon-512x512.png')))->toBeTrue();
     expect(file_exists(public_path('icons/apple-touch-icon.png')))->toBeTrue();
+});
+
+test('session heartbeat ping endpoint returns fresh csrf token and auth status', function () {
+    // Guest ping
+    $response = $this->getJson(route('ping'));
+    $response->assertStatus(200);
+    $response->assertJson([
+        'status' => 'ok',
+        'authenticated' => false,
+    ]);
+    expect($response->json('csrf_token'))->toBeString()->not->toBeEmpty();
+
+    // Authenticated ping
+    $authResponse = $this->actingAs($this->employee)->getJson(route('ping'));
+    $authResponse->assertStatus(200);
+    $authResponse->assertJson([
+        'status' => 'ok',
+        'authenticated' => true,
+        'user' => [
+            'id' => $this->employee->id,
+            'name' => $this->employee->name,
+            'role' => $this->employee->role,
+        ],
+    ]);
 });

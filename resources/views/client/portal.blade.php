@@ -1572,10 +1572,10 @@
         });
 
         // Asset Intake Hub Variables & URLs
-        const assetSubmitUrlTemplate = "{{ route('client.portal.assets.submit', [$project->share_token, '__ASSET_ID__']) }}";
-        const assetStoreUrl = "{{ route('client.portal.assets.store', $project->share_token) }}";
-        const assetDeleteUrlTemplate = "{{ route('client.portal.assets.delete', [$project->share_token, '__ASSET_ID__']) }}";
-        const assetToggleApprovalUrlTemplate = "{{ route('client.portal.assets.toggle-approval', [$project->share_token, '__ASSET_ID__']) }}";
+        const assetSubmitUrlTemplate = "{{ url('/shared/project/' . $project->share_token . '/assets/__ASSET_ID__/submit') }}";
+        const assetStoreUrl = "{{ url('/shared/project/' . $project->share_token . '/assets') }}";
+        const assetDeleteUrlTemplate = "{{ url('/shared/project/' . $project->share_token . '/assets/__ASSET_ID__') }}";
+        const assetToggleApprovalUrlTemplate = "{{ url('/shared/project/' . $project->share_token . '/assets/__ASSET_ID__/toggle-approval') }}";
         let currentAssetFilter = 'all';
 
         // 10. Switch Portal View (Chat vs Assets)
@@ -1955,6 +1955,7 @@
             if (tabTot) tabTot.textContent = metrics.total;
         }
     </script>
+    @include('layouts.partials.pwa_support')
 </body>
 </html>
 
